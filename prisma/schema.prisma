@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  passwordHash String         @map("password_hash")
+  name         String
+  avatarUrl    String?        @map("avatar_url")
+  role         Role           @default(USER)
+  createdAt    DateTime       @default(now()) @map("created_at")
+
+  likedSongs      LikedSong[]
+  playlists       Playlist[]
+  queueItems      QueueItem[]
+  followedArtists FollowedArtist[]
+  passwordResets  PasswordReset[]
+
+  @@map("users")
+}
+
+model LikedSong {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  songId    String   @map("song_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, songId])
+  @@map("liked_songs")
+}
+
+model Playlist {
+  id          String         @id @default(cuid())
+  userId      String         @map("user_id")
+  name        String
+  description String?
+  coverUrl    String?        @map("cover_url")
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  songs PlaylistSong[]
+
+  @@map("playlists")
+}
+
+model PlaylistSong {
+  id         String   @id @default(cuid())
+  playlistId String   @map("playlist_id")
+  songId     String   @map("song_id")
+  position   Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+
+  @@unique([playlistId, songId])
+  @@map("playlist_songs")
+}
+
+model QueueItem {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  songId    String   @map("song_id")
+  songData  Json     @map("song_data")
+  position  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("queue_items")
+}
+
+model FollowedArtist {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  artistId    String   @map("artist_id")
+  artistName  String   @map("artist_name")
+  artistImage String?  @map("artist_image")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, artistId])
+  @@map("followed_artists")
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_resets")
+}

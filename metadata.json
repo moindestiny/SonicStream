@@ -1,0 +1,5 @@
+{
+  "name": "SonicStream",
+  "description": "A modern music streaming application powered by JioSaavn API",
+  "requestFramePermissions": []
+}

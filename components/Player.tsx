@@ -91,7 +91,7 @@ export default function Player() {
       <motion.div
         initial={{ y: 100 }}
         animate={{ y: 0 }}
-        className="fixed bottom-17 md:bottom-0 left-0 right-0 z-50 px-2 md:px-4 pb-2 md:pb-2"
+        className="fixed bottom-[var(--mobile-nav-height)] md:bottom-0 left-0 right-0 z-50 px-2 md:px-4 pb-2 md:pb-2"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         {/* Progress bar at very top */}

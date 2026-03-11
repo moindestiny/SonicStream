@@ -52,7 +52,7 @@ export default function CustomPlaylistsPage() {
   };
 
   return (
-    <div className="px-4 md:px-8 pb-32 pt-14 md:pt-10 min-h-screen">
+    <div className="px-4 md:px-8 pb-10 pt-14 md:pt-10 min-h-screen">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10">
         <h1 className="text-3xl md:text-4xl font-black tracking-tight" style={{ color: 'var(--text-primary)' }}>Your Playlists</h1>
         <button onClick={() => setIsCreateModalOpen(true)} className="glass-card px-5 py-2.5 rounded-2xl text-sm font-bold flex items-center gap-2 transition-all hover:scale-105 active:scale-95" style={{ color: 'var(--accent)' }}>

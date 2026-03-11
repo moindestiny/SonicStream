@@ -16,7 +16,7 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="px-4 md:px-8 pb-32 pt-14 md:pt-10">
+      <div className="px-4 md:px-8 pb-10 pt-14 md:pt-10">
         <div className="max-w-md mx-auto text-center py-20">
           <div className="w-24 h-24 rounded-full aurora-bg mx-auto mb-6 flex items-center justify-center">
             <User size={48} className="text-white" />
@@ -35,7 +35,7 @@ export default function ProfilePage() {
 
   // Signed in profile
   return (
-    <div className="px-4 md:px-8 pb-32 pt-14 md:pt-10">
+    <div className="px-4 md:px-8 pb-10 pt-14 md:pt-10">
       <div className="max-w-2xl mx-auto">
         {/* Profile Header */}
         <div className="flex flex-col md:flex-row items-center gap-6 mb-10 p-6 glass-card rounded-2xl">

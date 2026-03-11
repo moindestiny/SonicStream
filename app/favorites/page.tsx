@@ -22,7 +22,7 @@ export default function FavoritesPage() {
   });
 
   return (
-    <div className="px-4 md:px-8 pb-32">
+    <div className="px-4 md:px-8 pb-10">
       {/* Hero */}
       <div className="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8 mb-10 p-6 md:p-8 rounded-2xl mt-4" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-tertiary))' }}>
         <div className="w-48 h-48 md:w-56 md:h-56 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(20px)' }}>

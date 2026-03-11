@@ -30,7 +30,7 @@ export default function LibraryPage() {
   };
 
   return (
-    <div className="px-4 md:px-8 pb-32 pt-4">
+    <div className="px-4 md:px-8 pb-10 pt-4">
       <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight mb-8" style={{ color: 'var(--text-primary)' }}>Your Library</h1>
 
       {/* Cards Grid */}

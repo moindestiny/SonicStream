@@ -30,9 +30,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ThemeProvider>
             <div className="flex flex-col h-screen w-full relative">
               <Sidebar />
-              <main className="flex-1 overflow-y-auto pb-28 md:pb-32 pt-0 md:pt-20 relative">
-                <div className="relative z-10 w-full h-full max-w-[1600px] mx-auto">
+              <main className="flex-1 overflow-y-auto pt-0 md:pt-[var(--header-height)] relative">
+                <div className="relative z-10 w-full max-w-[1600px] mx-auto">
                   {children}
+                  {/* Persistent Bottom Spacer to prevent clipping by Fixed Player and Mobile Nav */}
+                  <div className="h-[200px] md:h-[120px] w-full flex-shrink-0" aria-hidden="true" />
                 </div>
               </main>
               <Player />

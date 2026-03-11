@@ -42,7 +42,7 @@ function SearchContent() {
   ];
 
   return (
-    <div className="px-4 md:px-8 pb-32 pt-14 md:pt-10">
+    <div className="px-4 md:px-8 pb-10 pt-14 md:pt-10">
       {/* Search Bar */}
       <div className="max-w-2xl mx-auto mb-8 mt-4 relative z-10">
         <div className="relative group">

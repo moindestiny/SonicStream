@@ -99,9 +99,9 @@ export function normalizeSong(song: any): Song {
   let artists = song.artists;
   if (!artists && song.primaryArtists) {
     artists = {
-      primary: song.primaryArtists.split(',').map((name: string, index: number) => ({
-        id: '', // ID might not be available in global search
-        name: name.trim(),
+      primary: song.primaryArtists.split(',').map((n: string) => ({
+        id: '',
+        name: n.trim(),
         role: 'primary',
         type: 'artist',
         image: [],
@@ -110,13 +110,42 @@ export function normalizeSong(song: any): Song {
       featured: [],
       all: []
     };
+  } else if (typeof artists === 'string') {
+    // Some search results return artists as a string
+    artists = {
+      primary: (artists as string).split(',').map(n => ({
+        id: '',
+        name: n.trim(),
+        role: 'primary',
+        type: 'artist',
+        image: [],
+        url: ''
+      })),
+      featured: [],
+      all: []
+    };
+  } else if (Array.isArray(artists)) {
+    // Some cases return it as a flat array
+    artists = {
+      primary: (artists as any[]).map(a => typeof a === 'string' ? { name: a, id: '', role: 'primary', type: 'artist', image: [], url: '' } : a),
+      featured: [],
+      all: []
+    };
+  }
+
+  // Handle inconsistent album structure
+  let album = song.album;
+  if (typeof album === 'string') {
+    album = { id: null, name: album, url: null };
+  } else if (!album) {
+    album = { id: null, name: null, url: null };
   }
 
   return {
     ...song,
     name,
     artists: artists || { primary: [], featured: [], all: [] },
-    album: song.album || { id: null, name: null, url: null },
+    album,
     image: song.image || [],
     downloadUrl: song.downloadUrl || []
   };

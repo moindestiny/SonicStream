@@ -1,37 +1,41 @@
-import { Song, getHighQualityImage, getHighQualityDownloadUrl } from '@/lib/api';
+import { Song, getHighQualityDownloadUrl } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 /**
- * Downloads a song as MP3 with embedded ID3 tags (title, artist, album, cover art).
- * Uses browser-id3-writer to write metadata into the MP3 before download.
+ * Downloads a song using simple fetch-and-blob logic.
+ * This version avoids binary modification to prevent browser hangs.
  */
-export async function downloadSong(song: Song): Promise<void> {
-  const url = getHighQualityDownloadUrl(song.downloadUrl);
-  if (!url) {
-    toast.error('Download URL not available');
-    return;
-  }
-
-  const toastId = toast.loading(`Downloading "${song.name}"...`);
-
+export const downloadSong = async (song: Song) => {
   try {
-    // Fetch the MP3 audio
-    const audioRes = await fetch(url);
-    const audioBuffer = await audioRes.arrayBuffer();
+    toast.loading(`Downloading "${song.name}"...`, { id: 'download-toast' });
 
-    // Trigger download - save as .m4a because JioSaavn streams are MP4 audio
-    const blob = new Blob([audioBuffer], { type: 'audio/mp4' });
+    const downloadUrl = getHighQualityDownloadUrl(song.downloadUrl);
+
+    if (!downloadUrl) {
+      toast.error('Download URL not found', { id: 'download-toast' });
+      return;
+    }
+
+    // 1. Fetch Audio
+    const response = await fetch(downloadUrl);
+    if (!response.ok) throw new Error('Failed to fetch audio');
+    
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    
+    // 2. Trigger Download
+    const artistString = song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${song.name || 'song'}.m4a`;
+    a.href = url;
+    a.download = `${song.name} - ${artistString}.m4a`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(a.href);
+    URL.revokeObjectURL(url);
 
-    toast.success(`Downloaded "${song.name}"`, { id: toastId });
-  } catch (err) {
-    console.error('Download failed:', err);
-    toast.error('Download failed', { id: toastId });
+    toast.success('Download started!', { id: 'download-toast' });
+  } catch (error) {
+    console.error('Download error:', error);
+    toast.error('Failed to download song', { id: 'download-toast' });
   }
-}
+};

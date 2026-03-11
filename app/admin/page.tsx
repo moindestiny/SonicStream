@@ -96,7 +96,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen px-4 md:px-8 pb-32" style={{ background: 'var(--bg-primary)' }}>
+    <div className="min-h-screen px-4 md:px-8 pb-10" style={{ background: 'var(--bg-primary)' }}>
       {/* Header */}
       <div className="flex items-center justify-between py-6 border-b" style={{ borderColor: 'var(--border)' }}>
         <div className="flex items-center gap-3">

@@ -74,7 +74,13 @@ export default function Sidebar() {
       {/* Mobile Bottom Dock */}
       <nav
         className="md:hidden fixed bottom-0 left-0 right-0 z-[60] flex items-center justify-around px-2 py-2 pb-safe"
-        style={{ background: 'var(--dock-bg)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', borderTop: '1px solid var(--border)' }}
+        style={{ 
+          background: 'var(--dock-bg)', 
+          backdropFilter: 'blur(24px)', 
+          WebkitBackdropFilter: 'blur(24px)', 
+          borderTop: '1px solid var(--border)',
+          paddingBottom: 'max(env(safe-area-inset-bottom), 14px)'
+        }}
       >
         {navItems.slice(0, 4).map((item) => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));

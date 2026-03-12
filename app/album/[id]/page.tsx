@@ -45,19 +45,19 @@ export default function AlbumPage() {
         </button>
       </div>
       {/* Hero */}
-      <div className="relative h-[45vh] md:h-[40vh] min-h-[350px] flex items-end p-5 md:p-8 pt-20 md:pt-8 overflow-hidden">
+      <div className="relative h-auto md:h-[40vh] min-h-[500px] md:min-h-[350px] flex flex-col justify-end p-5 md:p-8 pb-8 md:pb-8 overflow-hidden">
         <div className="absolute inset-0 z-0">
           <Image src={getHighQualityImage(album.image)} alt={album.name} fill className="object-cover opacity-30 blur-2xl scale-125 saturate-150" referrerPolicy="no-referrer" />
           <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, var(--bg-primary), transparent)' }} />
         </div>
-        <div className="relative z-10 flex flex-col md:flex-row items-end gap-6 md:gap-8 w-full">
-          <div className="relative w-48 h-48 md:w-56 md:h-56 flex-shrink-0 rounded-2xl overflow-hidden" style={{ boxShadow: '0 16px 40px var(--shadow-color)', border: '1px solid var(--border)' }}>
+        <div className="relative z-10 flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8 w-full mt-16 md:mt-0">
+          <div className="relative w-full max-w-[280px] aspect-square md:w-56 md:h-56 flex-shrink-0 rounded-2xl overflow-hidden" style={{ boxShadow: '0 16px 40px var(--shadow-color)', border: '1px solid var(--border)' }}>
             <Image src={getHighQualityImage(album.image)} alt={album.name} fill className="object-cover" referrerPolicy="no-referrer" />
           </div>
-          <div className="flex-1 pb-1">
+          <div className="flex-1 pb-1 text-center md:text-left w-full">
             <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--accent)' }}>Album</p>
             <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight mb-3" style={{ color: 'var(--text-primary)' }}>{album.name}</h1>
-            <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <div className="flex items-center justify-center md:justify-start gap-2 text-sm flex-wrap" style={{ color: 'var(--text-secondary)' }}>
               {album.artists?.primary?.length > 0 ? (
                 <Link href={`/artist/${album.artists.primary[0].id}`} className="font-bold hover:underline" style={{ color: 'var(--text-primary)' }}>{album.artists.primary[0].name}</Link>
               ) : <span className="font-bold">Unknown Artist</span>}

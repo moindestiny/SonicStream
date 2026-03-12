@@ -51,13 +51,27 @@ const nextConfig: NextConfig = {
   },
   output: 'standalone',
   transpilePackages: ['motion'],
-  webpack: (config, {dev}) => {
+  webpack: (config, {dev, isServer}) => {
     // HMR is disabled in AI Studio via DISABLE_HMR env var.
     // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
     if (dev && process.env.DISABLE_HMR === 'true') {
       config.watchOptions = {
         ignored: /.*/,
       };
+    }
+    // Exclude ffmpeg-related packages from client-side bundle
+    // They use dynamic requires that webpack cannot analyze
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        os: false,
+        crypto: false,
+      };
+    } else {
+      // Mark ffmpeg packages as external on server to prevent webpack bundling issues
+      config.externals = [...(config.externals || []), 'fluent-ffmpeg', '@ffmpeg-installer/ffmpeg'];
     }
     return config;
   },

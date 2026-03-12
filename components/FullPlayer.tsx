@@ -41,6 +41,90 @@ export default function FullPlayer({
     favorites, toggleFavorite, setCurrentSong, setQueue
   } = usePlayerStore();
 
+  // Touch handling for swipe down to close (only when at top of scroll)
+  const touchStartY = React.useRef(0);
+  const touchEndY = React.useRef(0);
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const minSwipeDistance = 80;
+
+  // Touch handling for album cover swipe (left/right to change song)
+  const coverTouchStartX = React.useRef(0);
+  const coverTouchCurrentX = React.useRef(0);
+  const [coverOffset, setCoverOffset] = React.useState(0);
+  const [isDragging, setIsDragging] = React.useState(false);
+  const minCoverSwipeDistance = 50;
+
+  const onCoverTouchStart = (e: React.TouchEvent) => {
+    coverTouchStartX.current = e.targetTouches[0].clientX;
+    coverTouchCurrentX.current = e.targetTouches[0].clientX;
+    setIsDragging(true);
+  };
+
+  const onCoverTouchMove = (e: React.TouchEvent) => {
+    const currentX = e.targetTouches[0].clientX;
+    coverTouchCurrentX.current = currentX;
+    const diff = currentX - coverTouchStartX.current;
+    // Limit the drag distance for visual feedback
+    setCoverOffset(Math.max(-100, Math.min(100, diff * 0.5)));
+  };
+
+  const onCoverTouchEnd = () => {
+    const distance = coverTouchCurrentX.current - coverTouchStartX.current;
+    setIsDragging(false);
+    setCoverOffset(0);
+    
+    // Swipe left (next song)
+    if (distance < -minCoverSwipeDistance) {
+      playNext();
+    }
+    // Swipe right (previous song)
+    else if (distance > minCoverSwipeDistance) {
+      playPrevious();
+    }
+    
+    // Reset values
+    coverTouchStartX.current = 0;
+    coverTouchCurrentX.current = 0;
+  };
+
+  // Reset scroll position when FullPlayer opens
+  React.useEffect(() => {
+    if (isOpen && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+  }, [isOpen, currentSong?.id]);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.targetTouches[0].clientY;
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    touchEndY.current = e.targetTouches[0].clientY;
+    
+    // Prevent pull-to-refresh when at top of scroll and swiping down
+    const container = scrollContainerRef.current;
+    const isAtTop = !container || container.scrollTop <= 5; // Small buffer for floating point
+    const isSwipingDown = e.targetTouches[0].clientY > touchStartY.current;
+    
+    if (isAtTop && isSwipingDown) {
+      e.preventDefault();
+    }
+  };
+
+  const onTouchEnd = () => {
+    const container = scrollContainerRef.current;
+    const isAtTop = !container || container.scrollTop <= 5;
+    const distance = touchEndY.current - touchStartY.current;
+    
+    // Only close if at top of scroll and swiped down enough
+    if (isAtTop && distance > minSwipeDistance) {
+      onClose();
+    }
+    // Reset touch values
+    touchStartY.current = 0;
+    touchEndY.current = 0;
+  };
+
   const { data: suggestionsData } = useQuery({
     queryKey: ['suggestions', currentSong?.id],
     queryFn: async () => {
@@ -79,7 +163,10 @@ export default function FullPlayer({
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className="fixed inset-0 z-[60] flex flex-col overflow-hidden"
-            style={{ background: 'var(--bg-primary)' }}
+            style={{ background: 'var(--bg-primary)', touchAction: 'pan-x pan-y' }}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
           >
             {/* Blurred background art */}
             <div className="absolute inset-0 z-0 opacity-30 blur-3xl scale-125 pointer-events-none saturate-150">
@@ -101,16 +188,25 @@ export default function FullPlayer({
               </button>
             </div>
 
-            <div className="relative z-10 flex-1 overflow-y-auto px-4 md:px-8 pb-20">
+            <div ref={scrollContainerRef} className="relative z-10 flex-1 overflow-y-auto px-4 md:px-8 pb-20">
               <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center min-h-full py-4 md:py-8">
                 {/* Album Art with vinyl effect */}
                 <div className="flex flex-col items-center justify-center">
                   <motion.div
                     layoutId="player-album-art"
                     className="relative w-full max-w-[420px] aspect-square rounded-3xl overflow-hidden group"
-                    style={{ boxShadow: '0 24px 48px var(--shadow-color)', border: '1px solid var(--border)' }}
+                    style={{ 
+                      boxShadow: '0 24px 48px var(--shadow-color)', 
+                      border: '1px solid var(--border)',
+                      x: coverOffset
+                    }}
+                    animate={{ x: coverOffset }}
+                    transition={{ type: 'tween', ease: 'easeOut', duration: 0.1 }}
+                    onTouchStart={onCoverTouchStart}
+                    onTouchMove={onCoverTouchMove}
+                    onTouchEnd={onCoverTouchEnd}
                   >
-                    <Image src={getHighQualityImage(currentSong.image)} alt={currentSong.name} fill className="object-cover transition-transform duration-1000 group-hover:scale-105" referrerPolicy="no-referrer" />
+                    <Image src={getHighQualityImage(currentSong.image)} alt={currentSong.name} fill className="object-cover" referrerPolicy="no-referrer" />
                   </motion.div>
                 </div>
 
@@ -125,7 +221,18 @@ export default function FullPlayer({
                           <div className="text-xs md:text-sm lg:text-lg font-semibold text-left whitespace-nowrap">
                             {currentSong.artists?.primary?.map((artist, idx) => (
                               <span key={artist.id || idx}>
-                                <Link href={artist.id ? `/artist/${artist.id}` : '#'} onClick={(e) => { if (!artist.id) e.preventDefault(); else onClose(); }} className="transition-colors hover:underline" style={{ color: 'var(--text-secondary)' }}>
+                                <Link 
+                                  href={artist.id ? `/artist/${artist.id}` : '#'} 
+                                  onClick={(e) => { 
+                                    if (!artist.id) {
+                                      e.preventDefault(); 
+                                    } else {
+                                      onClose();
+                                    }
+                                  }} 
+                                  className="transition-colors hover:underline cursor-pointer pointer-events-auto" 
+                                  style={{ color: 'var(--text-secondary)' }}
+                                >
                                   {artist.name}
                                 </Link>
                                 {idx < currentSong.artists.primary.length - 1 && <span className="mx-1" style={{ color: 'var(--text-muted)' }}>,</span>}
@@ -140,9 +247,20 @@ export default function FullPlayer({
                           <div className="text-xs md:text-sm lg:text-lg font-semibold text-left whitespace-nowrap">
                             {currentSong.artists?.primary?.map((artist, idx) => (
                               <span key={artist.id || idx}>
-                                <span className="transition-colors" style={{ color: 'var(--text-secondary)' }}>
+                                <Link 
+                                  href={artist.id ? `/artist/${artist.id}` : '#'} 
+                                  onClick={(e) => { 
+                                    if (!artist.id) {
+                                      e.preventDefault(); 
+                                    } else {
+                                      onClose();
+                                    }
+                                  }} 
+                                  className="transition-colors hover:underline cursor-pointer pointer-events-auto" 
+                                  style={{ color: 'var(--text-secondary)' }}
+                                >
                                   {artist.name}
-                                </span>
+                                </Link>
                                 {idx < currentSong.artists.primary.length - 1 && <span className="mx-1" style={{ color: 'var(--text-muted)' }}>,</span>}
                               </span>
                             ))}

@@ -1,13 +1,13 @@
-import { Song, getHighQualityDownloadUrl } from '@/lib/api';
+import { Song, getHighQualityDownloadUrl, getHighQualityImage } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 /**
- * Downloads a song using simple fetch-and-blob logic.
- * This version avoids binary modification to prevent browser hangs.
+ * Downloads a song with embedded ID3 metadata using server-side FFmpeg conversion
+ * Converts M4A to MP3 with proper metadata and album art
  */
 export const downloadSong = async (song: Song) => {
   try {
-    toast.loading(`Downloading "${song.name}"...`, { id: 'download-toast' });
+    toast.loading(`Processing "${song.name}"...`, { id: 'download-toast', duration: Infinity });
 
     const downloadUrl = getHighQualityDownloadUrl(song.downloadUrl);
 
@@ -16,26 +16,50 @@ export const downloadSong = async (song: Song) => {
       return;
     }
 
-    // 1. Fetch Audio
-    const response = await fetch(downloadUrl);
-    if (!response.ok) throw new Error('Failed to fetch audio');
-    
+    // Prepare metadata
+    const artistString = song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
+    const albumName = song.album?.name || 'Unknown Album';
+    const songTitle = song.name || 'Unknown Title';
+    const year = song.year || '';
+    const imageUrl = getHighQualityImage(song.image);
+
+    // Call server API to convert and download
+    const response = await fetch('/api/download', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        audioUrl: downloadUrl,
+        imageUrl: imageUrl.startsWith('data:') ? undefined : imageUrl,
+        title: songTitle,
+        artist: artistString,
+        album: albumName,
+        year: year,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to process audio');
+    }
+
+    // Get the MP3 blob from response
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
     
-    // 2. Trigger Download
-    const artistString = song.artists?.primary?.map(a => a.name).join(', ') || 'Unknown Artist';
+    // Trigger download
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${song.name} - ${artistString}.m4a`;
+    a.download = `${songTitle} - ${artistString}.mp3`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    toast.success('Download started!', { id: 'download-toast' });
+    toast.success('Download completed!', { id: 'download-toast', duration: 2000 });
   } catch (error) {
     console.error('Download error:', error);
-    toast.error('Failed to download song', { id: 'download-toast' });
+    toast.error(`Failed to download: ${(error as Error).message}`, { id: 'download-toast' });
   }
 };

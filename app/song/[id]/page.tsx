@@ -66,15 +66,15 @@ export default function SongPage() {
       </div>
       
       {/* Hero Section */}
-      <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-center md:items-end mb-10 pt-4">
+      <div className="flex flex-col md:flex-row gap-6 md:gap-12 items-center md:items-end mb-10 pt-4">
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-          className="relative w-64 h-64 md:w-72 md:h-72 rounded-2xl overflow-hidden flex-shrink-0"
+          className="relative w-full max-w-[320px] aspect-square md:w-72 md:h-72 rounded-2xl overflow-hidden flex-shrink-0"
           style={{ boxShadow: '0 16px 40px var(--shadow-color)', border: '1px solid var(--border)' }}
         >
           <Image src={getHighQualityImage(song.image)} alt={song.name} fill className="object-cover" referrerPolicy="no-referrer" />
         </motion.div>
 
-        <div className="flex-1 w-full min-w-0 text-center md:text-left">
+        <div className="flex-1 w-full min-w-0 text-center md:text-left px-2 md:px-0">
           <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--accent)' }}>Song</p>
           <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight mb-4 break-words" style={{ color: 'var(--text-primary)' }}>{song.name}</h1>
 

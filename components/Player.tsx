@@ -91,8 +91,8 @@ export default function Player() {
       <motion.div
         initial={{ y: 100 }}
         animate={{ y: 0 }}
-        className="fixed bottom-[var(--mobile-nav-height)] md:bottom-0 left-0 right-0 z-50 px-2 md:px-4 pb-2 md:pb-2"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        className="fixed bottom-[var(--mobile-nav-height)] md:bottom-0 left-0 right-0 z-50  md:px-4"
+        style={{ paddingBottom: 'max(env(safe-area-inset-bottom))' }}
       >
         {/* Progress bar at very top */}
         <div className="absolute top-0 left-0 right-0 h-1 z-20 cursor-pointer" style={{ background: 'var(--border)' }}>
@@ -100,16 +100,18 @@ export default function Player() {
           <input type="range" min={0} max={duration || 0} step={0.1} value={currentTime} onChange={(e) => handleSeek(parseFloat(e.target.value))} className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer" />
         </div>
 
-        <div className="rounded-2xl md:rounded-3xl overflow-hidden md:border md:border-[var(--border)]" style={{ background: 'var(--player-bg)', backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)' }}>
+        <div className=" md:rounded-3xl overflow-hidden md:border md:border-[var(--border)]" style={{ background: 'var(--player-bg)', backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)' }}>
           <audio ref={audioRef} onTimeUpdate={onTimeUpdate} onLoadedMetadata={onLoadedMetadata} onEnded={onEnded} />
 
-          <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-3 md:gap-6 px-3 md:px-5 py-2.5 md:py-3 relative z-10">
+          <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-3 md:gap-6 px-3 md:px-5 py-2.5 md:py-3 relative z-10 ">
             {/* Song Info */}
-            <div className="flex items-center gap-3 w-full md:w-[30%] min-w-[140px]">
+            <div 
+              className="flex items-center gap-3 w-full md:w-[30%] min-w-[140px] cursor-pointer"
+              onClick={() => setIsFullPlayerOpen(true)}
+            >
               <motion.div
                 layoutId="player-album-art"
-                onClick={() => setIsFullPlayerOpen(true)}
-                className="relative w-11 h-11 md:w-12 md:h-12 flex-shrink-0 rounded-xl overflow-hidden cursor-pointer group"
+                className="relative w-11 h-11 md:w-12 md:h-12 flex-shrink-0 rounded-xl overflow-hidden group"
                 style={{ boxShadow: '0 4px 12px var(--shadow-color)' }}
               >
                 <Image src={getHighQualityImage(currentSong.image)} alt={currentSong.name} fill className="object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
@@ -118,14 +120,18 @@ export default function Player() {
                 </div>
               </motion.div>
               <div className="min-w-0 flex-1">
-                <Link href={`/song/${currentSong.id}`} className="font-bold text-sm truncate block transition-colors" style={{ color: 'var(--text-primary)' }}>
+                <p className="font-bold text-sm truncate block transition-colors" style={{ color: 'var(--text-primary)' }}>
                   {currentSong.name}
-                </Link>
+                </p>
                 <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
                   {currentSong.artists?.primary?.map(a => a.name).join(', ') || 'Unknown'}
                 </p>
               </div>
-              <button onClick={handleLikeWithAuth} className="p-1.5 rounded-full transition-all hidden sm:block" style={{ color: isFavorite ? 'var(--accent)' : 'var(--text-muted)' }}>
+              <button 
+                onClick={(e) => { e.stopPropagation(); handleLikeWithAuth(); }} 
+                className="p-1.5 rounded-full transition-all hidden sm:block" 
+                style={{ color: isFavorite ? 'var(--accent)' : 'var(--text-muted)' }}
+              >
                 <Heart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
               </button>
             </div>

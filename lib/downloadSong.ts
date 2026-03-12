@@ -60,6 +60,6 @@ export const downloadSong = async (song: Song) => {
     toast.success('Download completed!', { id: 'download-toast', duration: 2000 });
   } catch (error) {
     console.error('Download error:', error);
-    toast.error(`Failed to download: ${(error as Error).message}`, { id: 'download-toast' });
+    toast.error(`Failed to download: ${(error as Error).message}`, { id: 'download-toast', duration: 3000 });
   }
 };

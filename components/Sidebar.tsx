@@ -29,13 +29,7 @@ export default function Sidebar() {
       >
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-          <div className="w-9 h-9 rounded-xl aurora-bg flex items-center justify-center shadow-lg">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 18V5l12-2v13" />
-              <circle cx="6" cy="18" r="3" />
-              <circle cx="18" cy="16" r="3" />
-            </svg>
-          </div>
+          <img src="/icon.png" alt="" className='h-8' />
           <span className="text-lg font-extrabold tracking-tight" style={{ color: 'var(--text-primary)' }}>SonicStream</span>
         </Link>
 

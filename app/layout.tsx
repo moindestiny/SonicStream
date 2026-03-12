@@ -6,6 +6,7 @@ import QueryProvider from '@/components/QueryProvider';
 import ThemeProvider from '@/components/ThemeProvider';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import ToasterWrapper from '@/components/ToasterWrapper';
+import PWARegister from '@/components/PWARegister';
 
 const font = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -29,12 +30,12 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/icon.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon.png', sizes: '512x512', type: 'image/png' },
     ],
     apple: [
-      { url: '/icon-192x192.png', sizes: '192x192' },
-      { url: '/icon-512x512.png', sizes: '512x512' },
+      { url: '/icon.png', sizes: '192x192' },
+      { url: '/icon.png', sizes: '512x512' },
     ],
   },
   openGraph: {
@@ -73,6 +74,7 @@ export const viewport: Viewport = {
     { media: '(prefers-color-scheme: dark)', color: '#0a0a0f' },
     { media: '(prefers-color-scheme: light)', color: '#f5f3f0' },
   ],
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -97,6 +99,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Player />
             </div>
             <ToasterWrapper />
+            <PWARegister />
           </ThemeProvider>
         </QueryProvider>
       </body>

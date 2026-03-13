@@ -15,14 +15,18 @@ import { downloadSong } from '@/lib/downloadSong';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import AuthModal from '@/components/AuthModal';
 import toast from 'react-hot-toast';
+import { useDefaultQueue } from '@/hooks/useDefaultQueue';
 
 export default function Player() {
   const {
     currentSong, isPlaying, togglePlay, playNext, playPrevious,
     volume, setVolume, repeatMode, setRepeatMode, isShuffle, toggleShuffle,
-    favorites, toggleFavorite, queue, isQueueOpen, setQueueOpen, removeFromQueue,
-    setCurrentSong, setQueue
+    favorites, toggleFavorite, userQueue, defaultQueue, isQueueOpen, setQueueOpen, removeFromQueue,
+    setCurrentSong, getFullQueue
   } = usePlayerStore();
+  
+  // Initialize default queue hook
+  useDefaultQueue();
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
@@ -100,7 +104,7 @@ export default function Player() {
           <input type="range" min={0} max={duration || 0} step={0.1} value={currentTime} onChange={(e) => handleSeek(parseFloat(e.target.value))} className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer" />
         </div>
 
-        <div className=" md:rounded-3xl overflow-hidden md:border md:border-[var(--border)]" style={{ background: 'var(--player-bg)', backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)' }}>
+        <div className=" md:rounded-3xl overflow-hidden md:border md:border-[var(--border)] " style={{ background: 'var(--player-bg)', backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)' }}>
           <audio ref={audioRef} onTimeUpdate={onTimeUpdate} onLoadedMetadata={onLoadedMetadata} onEnded={onEnded} />
 
           <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-3 md:gap-6 px-3 md:px-5 py-2.5 md:py-3 relative z-10 ">
@@ -212,26 +216,85 @@ export default function Player() {
                 <X size={20} />
               </button>
             </div>
-            <div className="p-3">
-              {queue.length === 0 ? (
+            <div className="p-3 space-y-4">
+              {!currentSong && userQueue.length === 0 && defaultQueue.length === 0 ? (
                 <p className="text-center py-10 text-sm" style={{ color: 'var(--text-muted)' }}>Queue is empty</p>
               ) : (
-                queue.map((song, idx) => (
-                  <div key={`${song.id}-${idx}`} className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer group transition-all" style={{ background: currentSong?.id === song.id ? 'var(--bg-card-hover)' : 'transparent' }}
-                    onClick={() => { setCurrentSong(song); setQueue(queue); }}
-                  >
-                    <div className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
-                      <Image src={getHighQualityImage(song.image)} alt={song.name} fill className="object-cover" referrerPolicy="no-referrer" />
+                <>
+                  {/* Now Playing - Current Song */}
+                  {currentSong && (
+                    <div>
+                      <h4 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--accent)' }}>Now Playing</h4>
+                      <div className="flex items-center gap-3 p-2.5 rounded-xl" style={{ background: 'var(--bg-card-hover)' }}>
+                        <div className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+                          <Image src={getHighQualityImage(currentSong.image)} alt={currentSong.name} fill className="object-cover" referrerPolicy="no-referrer" />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                            <div className="flex items-end gap-0.5 h-3">
+                              <div className="w-0.5 eq-bar rounded-t-sm" style={{ background: 'var(--accent)' }} />
+                              <div className="w-0.5 eq-bar rounded-t-sm" style={{ background: 'var(--accent)', animationDelay: '0.2s' }} />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold truncate" style={{ color: 'var(--accent)' }}>{currentSong.name}</p>
+                          <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{currentSong.artists?.primary?.map(a => a.name).join(', ')}</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold truncate" style={{ color: currentSong?.id === song.id ? 'var(--accent)' : 'var(--text-primary)' }}>{song.name}</p>
-                      <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{song.artists?.primary?.map(a => a.name).join(', ')}</p>
+                  )}
+                  
+                  {/* User Queue Section */}
+                  {userQueue.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--text-secondary)' }}>Next Up</h4>
+                      <div className="space-y-1">
+                        {userQueue.map((song, idx) => (
+                          <div key={`user-${song.id}-${idx}`} className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer group transition-all hover:bg-white/5"
+                            onClick={() => setCurrentSong(song)}
+                          >
+                            <div className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+                              <Image src={getHighQualityImage(song.image)} alt={song.name} fill className="object-cover" referrerPolicy="no-referrer" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{song.name}</p>
+                              <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{song.artists?.primary?.map(a => a.name).join(', ')}</p>
+                            </div>
+                            <button onClick={(e) => { e.stopPropagation(); removeFromQueue(song.id); }} className="p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-all" style={{ color: 'var(--text-muted)' }}>
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); removeFromQueue(song.id); }} className="p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-all" style={{ color: 'var(--text-muted)' }}>
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))
+                  )}
+                  
+                  {/* Default Queue Section */}
+                  {defaultQueue.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--text-muted)' }}>
+                        More from Artist/Album
+                      </h4>
+                      <div className="space-y-1">
+                        {defaultQueue.slice(0, 20).map((song, idx) => (
+                          <div key={`default-${song.id}-${idx}`} className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer group transition-all hover:bg-white/5"
+                            onClick={() => setCurrentSong(song)}
+                          >
+                            <div className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+                              <Image src={getHighQualityImage(song.image)} alt={song.name} fill className="object-cover" referrerPolicy="no-referrer" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{song.name}</p>
+                              <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{song.artists?.primary?.map(a => a.name).join(', ')}</p>
+                            </div>
+                            <button onClick={(e) => { e.stopPropagation(); removeFromQueue(song.id); }} className="p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-all" style={{ color: 'var(--text-muted)' }}>
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </motion.div>

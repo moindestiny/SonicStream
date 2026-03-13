@@ -91,8 +91,8 @@ export default function AddToPlaylistModal({ isOpen, onClose, songId }: AddToPla
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="relative w-full sm:max-w-md h-[70vh] sm:h-[60vh] max-h-[500px] flex flex-col glass-card sm:rounded-2xl rounded-t-3xl overflow-hidden"
-            style={{ background: 'var(--bg-card)' }}
+            className="relative w-full sm:max-w-md h-[80vh] sm:h-auto sm:max-h-[600px] flex flex-col glass-card sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl"
+            style={{ background: 'var(--bg-primary)' }}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: 'var(--border)' }}>

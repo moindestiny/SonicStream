@@ -7,6 +7,7 @@ import { api, getHighQualityImage, formatDuration, normalizeSong, getHighQuality
 import { Play, Pause, Heart, Clock, ChevronDown, Download, Plus } from 'lucide-react';
 import { usePlayerStore } from '@/store/usePlayerStore';
 import Image from 'next/image';
+import Link from 'next/link';
 import SkeletonLoader from '@/components/SkeletonLoader';
 import { downloadSong } from '@/lib/downloadSong';
 import toast from 'react-hot-toast';
@@ -50,21 +51,26 @@ export default function PlaylistPage() {
   };
 
   return (
-    <div className="relative min-h-screen pb-32">
+    <div className="relative min-h-screen pb-10">
+      <div className="absolute top-8 left-6 z-20">
+        <button onClick={() => window.history.back()} className="p-2.5 rounded-full glass-card transition-all hover:scale-105" style={{ color: 'var(--text-primary)' }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+      </div>
       {/* Hero */}
-      <div className="relative h-[40vh] min-h-[320px] flex items-end p-5 md:p-8 overflow-hidden">
+      <div className="relative h-auto md:h-[40vh] min-h-[500px] md:min-h-[350px] flex flex-col justify-end p-5 md:p-8 pb-8 md:pb-8 overflow-hidden">
         <div className="absolute inset-0 z-0">
           <Image src={getHighQualityImage(playlist.image)} alt={playlist.name} fill className="object-cover opacity-30 blur-2xl scale-125 saturate-150" referrerPolicy="no-referrer" />
           <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, var(--bg-primary), transparent)' }} />
         </div>
-        <div className="relative z-10 flex flex-col md:flex-row items-end gap-6 md:gap-8 w-full">
-          <div className="relative w-48 h-48 md:w-56 md:h-56 flex-shrink-0 rounded-2xl overflow-hidden" style={{ boxShadow: '0 16px 40px var(--shadow-color)', border: '1px solid var(--border)' }}>
+        <div className="relative z-10 flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8 w-full mt-16 md:mt-0">
+          <div className="relative w-full max-w-[280px] aspect-square md:w-56 md:h-56 flex-shrink-0 rounded-2xl overflow-hidden" style={{ boxShadow: '0 16px 40px var(--shadow-color)', border: '1px solid var(--border)' }}>
             <Image src={getHighQualityImage(playlist.image)} alt={playlist.name} fill className="object-cover" referrerPolicy="no-referrer" />
           </div>
-          <div className="flex-1 pb-1">
-            <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--accent-ocean)' }}>Playlist</p>
+          <div className="flex-1 pb-1 text-center md:text-left w-full">
+            <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--accent)' }}>Playlist</p>
             <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight mb-3" style={{ color: 'var(--text-primary)' }}>{playlist.name}</h1>
-            <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <div className="flex items-center justify-center md:justify-start gap-2 text-sm flex-wrap" style={{ color: 'var(--text-secondary)' }}>
               <span className="font-bold" style={{ color: 'var(--text-primary)' }}>SonicStream</span>
               <span style={{ color: 'var(--text-muted)' }}>•</span>
               <span>{parseInt(playlist.playCount || '0').toLocaleString()} saves</span>
@@ -101,7 +107,7 @@ export default function PlaylistPage() {
                 style={{ background: isCurrent ? 'var(--bg-card-hover)' : 'transparent' }}
               >
                 <div className="w-8 flex justify-center items-center">
-                  <span className="text-sm font-medium" style={{ color: isCurrent ? 'var(--accent)' : 'var(--text-muted)' }}>
+                  <span className={`text-sm font-medium ${isCurrent ? '' : 'group-hover:hidden'}`} style={{ color: isCurrent ? 'var(--accent)' : 'var(--text-muted)' }}>
                     {isCurrent && isPlaying ? (
                       <div className="flex items-end gap-0.5 h-3">
                         <div className="w-0.5 eq-bar rounded-t-sm" style={{ background: 'var(--accent)' }} />
@@ -109,9 +115,10 @@ export default function PlaylistPage() {
                       </div>
                     ) : index + 1}
                   </span>
+                  <Play size={14} fill="currentColor" className="hidden group-hover:block" style={{ color: 'var(--text-primary)' }} />
                 </div>
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="relative w-11 h-11 flex-shrink-0 rounded-lg overflow-hidden">
+                  <div className="relative w-11 h-11 flex-shrink-0 rounded-lg overflow-hidden md:hidden">
                     <Image src={getHighQualityImage(song.image)} alt={song.name} fill className="object-cover" referrerPolicy="no-referrer" />
                   </div>
                   <div className="min-w-0">

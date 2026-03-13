@@ -17,6 +17,8 @@ const categories = [
   { label: 'Classical', icon: Disc3, query: 'Classical' },
 ];
 
+const SEARCH_STORAGE_KEY = 'sonicstream_search_query';
+
 function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -26,8 +28,25 @@ function SearchContent() {
   const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
   const [activeTab, setActiveTab] = useState<'songs' | 'artists' | 'albums' | 'playlists'>('songs');
 
+  // Load saved search query from localStorage on mount
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(query), 500);
+    const savedQuery = localStorage.getItem(SEARCH_STORAGE_KEY);
+    if (savedQuery && !initialQuery) {
+      setQuery(savedQuery);
+      setDebouncedQuery(savedQuery);
+    }
+  }, [initialQuery]);
+
+  // Save search query to localStorage whenever it changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+      if (query.trim()) {
+        localStorage.setItem(SEARCH_STORAGE_KEY, query);
+      } else {
+        localStorage.removeItem(SEARCH_STORAGE_KEY);
+      }
+    }, 500);
     return () => clearTimeout(timer);
   }, [query]);
 
@@ -57,7 +76,10 @@ function SearchContent() {
             autoFocus
           />
           {query && (
-            <button onClick={() => setQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-full transition-all" style={{ background: 'var(--bg-card-hover)', color: 'var(--text-muted)' }}>
+            <button onClick={() => {
+              setQuery('');
+              localStorage.removeItem(SEARCH_STORAGE_KEY);
+            }} className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-full transition-all" style={{ background: 'var(--bg-card-hover)', color: 'var(--text-muted)' }}>
               <X size={16} />
             </button>
           )}

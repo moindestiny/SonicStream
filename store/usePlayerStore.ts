@@ -11,7 +11,8 @@ interface UserData {
 
 interface PlayerState {
   currentSong: Song | null;
-  queue: Song[];
+  userQueue: Song[]; // Songs added by user (priority)
+  defaultQueue: Song[]; // Auto-generated queue from same artist/album
   isPlaying: boolean;
   volume: number;
   repeatMode: 'none' | 'one' | 'all';
@@ -27,6 +28,8 @@ interface PlayerState {
   addToQueue: (song: Song) => void;
   removeFromQueue: (songId: string) => void;
   clearQueue: () => void;
+  clearUserQueue: () => void;
+  setDefaultQueue: (songs: Song[]) => void;
   playNext: () => void;
   playPrevious: () => void;
   togglePlay: () => void;
@@ -38,13 +41,15 @@ interface PlayerState {
   addToRecentlyPlayed: (song: Song) => void;
   setUser: (user: UserData | null) => void;
   setQueueOpen: (open: boolean) => void;
+  getFullQueue: () => Song[];
 }
 
 export const usePlayerStore = create<PlayerState>()(
   persist(
     (set, get) => ({
       currentSong: null,
-      queue: [],
+      userQueue: [],
+      defaultQueue: [],
       isPlaying: false,
       volume: 0.7,
       repeatMode: 'none',
@@ -58,25 +63,38 @@ export const usePlayerStore = create<PlayerState>()(
         set({ currentSong: song, isPlaying: !!song });
         if (song) get().addToRecentlyPlayed(song);
       },
-      setQueue: (songs) => set({ queue: songs }),
+      // Legacy setQueue - now sets userQueue for backward compatibility
+      setQueue: (songs) => set({ userQueue: songs }),
+      // Add to user queue (priority queue) - insert at beginning for immediate play after current
       addToQueue: (song) => set((state) => {
-        if (state.queue.find(s => s.id === song.id)) return state;
-        return { queue: [...state.queue, song] };
+        const fullQueue = [...state.userQueue, ...state.defaultQueue];
+        if (fullQueue.find(s => s.id === song.id)) return state;
+        // Insert at the beginning so it plays next (after current song)
+        return { userQueue: [song, ...state.userQueue] };
       }),
       removeFromQueue: (songId) => set((state) => ({
-        queue: state.queue.filter(s => s.id !== songId),
+        userQueue: state.userQueue.filter(s => s.id !== songId),
+        defaultQueue: state.defaultQueue.filter(s => s.id !== songId),
       })),
-      clearQueue: () => set({ queue: [] }),
+      clearQueue: () => set({ userQueue: [], defaultQueue: [] }),
+      clearUserQueue: () => set({ userQueue: [] }),
+      setDefaultQueue: (songs) => set({ defaultQueue: songs }),
+      getFullQueue: () => {
+        const state = get();
+        return [...state.userQueue, ...state.defaultQueue];
+      },
       playNext: () => {
-        const { currentSong, queue, repeatMode, isShuffle } = get();
-        if (!currentSong || queue.length === 0) return;
+        const { currentSong, userQueue, defaultQueue, repeatMode, isShuffle } = get();
+        const fullQueue = [...userQueue, ...defaultQueue];
+        
+        if (!currentSong || fullQueue.length === 0) return;
 
-        const currentIndex = queue.findIndex((s) => s.id === currentSong.id);
+        const currentIndex = fullQueue.findIndex((s) => s.id === currentSong.id);
         let nextIndex = currentIndex + 1;
 
         if (isShuffle) {
-          nextIndex = Math.floor(Math.random() * queue.length);
-        } else if (nextIndex >= queue.length) {
+          nextIndex = Math.floor(Math.random() * fullQueue.length);
+        } else if (nextIndex >= fullQueue.length) {
           if (repeatMode === 'all') {
             nextIndex = 0;
           } else {
@@ -85,17 +103,28 @@ export const usePlayerStore = create<PlayerState>()(
           }
         }
 
-        set({ currentSong: queue[nextIndex], isPlaying: true });
+        // Remove from userQueue if we're moving past it
+        const nextSong = fullQueue[nextIndex];
+        set((state) => {
+          const newUserQueue = state.userQueue.filter(s => s.id !== currentSong.id);
+          return { 
+            currentSong: nextSong, 
+            isPlaying: true,
+            userQueue: newUserQueue
+          };
+        });
       },
       playPrevious: () => {
-        const { currentSong, queue } = get();
-        if (!currentSong || queue.length === 0) return;
+        const { currentSong, userQueue, defaultQueue } = get();
+        const fullQueue = [...userQueue, ...defaultQueue];
+        
+        if (!currentSong || fullQueue.length === 0) return;
 
-        const currentIndex = queue.findIndex((s) => s.id === currentSong.id);
+        const currentIndex = fullQueue.findIndex((s) => s.id === currentSong.id);
         let prevIndex = currentIndex - 1;
-        if (prevIndex < 0) prevIndex = queue.length - 1;
+        if (prevIndex < 0) prevIndex = fullQueue.length - 1;
 
-        set({ currentSong: queue[prevIndex], isPlaying: true });
+        set({ currentSong: fullQueue[prevIndex], isPlaying: true });
       },
       togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
       setVolume: (volume) => set({ volume }),

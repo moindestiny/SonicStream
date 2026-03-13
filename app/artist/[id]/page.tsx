@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { api, getHighQualityImage, formatDuration, normalizeSong } from '@/lib/api';
-import { Play, CheckCircle2, Music, UserPlus, UserCheck, TrendingUp } from 'lucide-react';
+import { Play, CheckCircle2, Music, UserPlus, UserCheck, TrendingUp, Plus } from 'lucide-react';
 import { usePlayerStore } from '@/store/usePlayerStore';
 import Image from 'next/image';
 import AlbumCard from '@/components/AlbumCard';
@@ -71,7 +71,7 @@ export default function ArtistPage() {
     });
   };
 
-  const { setCurrentSong, setQueue, currentSong, isPlaying } = usePlayerStore();
+  const { setCurrentSong, setQueue, currentSong, isPlaying, addToQueue } = usePlayerStore();
 
   const rawArtist = artistData?.data || artistData;
   const artist = Array.isArray(rawArtist) ? rawArtist[0] : rawArtist;
@@ -229,7 +229,15 @@ export default function ArtistPage() {
                       <p className="text-xs truncate opacity-80" style={{ color: 'var(--text-muted)' }}>{song.artists?.primary?.map((a: any) => a.name).join(', ')}</p>
                     </div>
                   </div>
-                  <div className="hidden md:block flex-shrink-0">
+                  <div className="hidden md:flex items-center gap-2 flex-shrink-0">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); addToQueue(song); toast.success(`Added to queue`); }}
+                      className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                      style={{ color: 'var(--text-muted)' }}
+                      title="Add to queue"
+                    >
+                      <Plus size={14} />
+                    </button>
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ color: 'var(--text-muted)', background: 'var(--bg-card)' }}>
                       {parseInt(song.playCount || '0').toLocaleString()} plays
                     </span>

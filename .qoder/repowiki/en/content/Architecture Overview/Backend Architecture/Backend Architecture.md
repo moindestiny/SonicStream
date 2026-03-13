@@ -16,9 +16,22 @@
 - [playlists.route.ts](file://app/api/playlists/route.ts)
 - [queue.route.ts](file://app/api/queue/route.ts)
 - [upload.route.ts](file://app/api/upload/route.ts)
+- [download.route.ts](file://app/api/download/route.ts)
+- [downloadSong.ts](file://lib/downloadSong.ts)
+- [api.ts](file://lib/api.ts)
 - [useAuthGuard.ts](file://hooks/useAuthGuard.ts)
 - [package.json](file://package.json)
+- [next.config.ts](file://next.config.ts)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Added new Audio Processing System section documenting FFmpeg integration
+- Updated API Architecture Overview to include the new download endpoint
+- Enhanced Data Flow Diagrams to show audio conversion workflow
+- Added Temporary File Management section
+- Updated Security Considerations to address audio processing concerns
+- Modified Performance Considerations to include audio processing optimization
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -26,17 +39,18 @@
 3. [Core Components](#core-components)
 4. [Architecture Overview](#architecture-overview)
 5. [Detailed Component Analysis](#detailed-component-analysis)
-6. [Dependency Analysis](#dependency-analysis)
-7. [Performance Considerations](#performance-considerations)
-8. [Security Considerations](#security-considerations)
-9. [Troubleshooting Guide](#troubleshooting-guide)
-10. [Conclusion](#conclusion)
+6. [Audio Processing System](#audio-processing-system)
+7. [Dependency Analysis](#dependency-analysis)
+8. [Performance Considerations](#performance-considerations)
+9. [Security Considerations](#security-considerations)
+10. [Troubleshooting Guide](#troubleshooting-guide)
+11. [Conclusion](#conclusion)
 
 ## Introduction
-This document describes the backend architecture of SonicStream’s server-side implementation built with Next.js App Router. It covers the API routes pattern, authentication system, user management endpoints, and data manipulation APIs. It also explains Prisma ORM integration, database schema design and relationships, and migration strategies. Additional topics include authentication flows (password hashing, sessionless JWT-free design, role-based access control via roles), API endpoint organization, request/response handling, error management patterns, database design principles, indexing strategies, performance optimization techniques, and security considerations.
+This document describes the backend architecture of SonicStream's server-side implementation built with Next.js App Router. It covers the API routes pattern, authentication system, user management endpoints, data manipulation APIs, and the newly integrated audio processing system with FFmpeg. The audio processing system enables server-side conversion of audio files to MP3 format with embedded metadata and album art for seamless browser downloads.
 
 ## Project Structure
-The backend is organized under the Next.js app directory with a dedicated API namespace. Each feature area has its own route handler module exporting HTTP verb handlers (GET, POST, PATCH, DELETE). Shared infrastructure resides in lib (database client, Cloudinary uploads), while admin endpoints live under app/api/admin. Authentication endpoints are grouped under app/api/auth, including password reset flows.
+The backend is organized under the Next.js app directory with a dedicated API namespace. Each feature area has its own route handler module exporting HTTP verb handlers (GET, POST, PATCH, DELETE). Shared infrastructure resides in lib (database client, Cloudinary uploads, API utilities), while admin endpoints live under app/api/admin. Authentication endpoints are grouped under app/api/auth, including password reset flows. The new audio processing system is exposed through the app/api/download endpoint.
 
 ```mermaid
 graph TB
@@ -50,10 +64,13 @@ LIKES["/api/likes"]
 PLAYLISTS["/api/playlists"]
 QUEUE["/api/queue"]
 UPLOAD["/api/upload"]
+DOWNLOAD["/api/download"]
 end
 subgraph "Libraries"
 PRISMA["lib/db.ts<br/>PrismaClient"]
 CLOUDINARY["lib/cloudinary.ts"]
+API_UTILS["lib/api.ts<br/>Utility Functions"]
+DOWNLOAD_UTILS["lib/downloadSong.ts<br/>Client-side Download"]
 end
 AUTH --> PRISMA
 ADMIN_USERS --> PRISMA
@@ -64,6 +81,8 @@ LIKES --> PRISMA
 PLAYLISTS --> PRISMA
 QUEUE --> PRISMA
 UPLOAD --> CLOUDINARY
+DOWNLOAD --> DOWNLOAD_UTILS
+DOWNLOAD_UTILS --> API_UTILS
 ```
 
 **Diagram sources**
@@ -76,6 +95,9 @@ UPLOAD --> CLOUDINARY
 - [playlists.route.ts:18-90](file://app/api/playlists/route.ts#L18-L90)
 - [queue.route.ts:24-86](file://app/api/queue/route.ts#L24-L86)
 - [upload.route.ts:4-20](file://app/api/upload/route.ts#L4-L20)
+- [download.route.ts:1-150](file://app/api/download/route.ts#L1-L150)
+- [downloadSong.ts:1-66](file://lib/downloadSong.ts#L1-L66)
+- [api.ts:1-153](file://lib/api.ts#L1-L153)
 - [db.ts:1-10](file://lib/db.ts#L1-L10)
 - [cloudinary.ts:1-21](file://lib/cloudinary.ts#L1-L21)
 
@@ -89,6 +111,9 @@ UPLOAD --> CLOUDINARY
 - [playlists.route.ts:18-90](file://app/api/playlists/route.ts#L18-L90)
 - [queue.route.ts:24-86](file://app/api/queue/route.ts#L24-L86)
 - [upload.route.ts:4-20](file://app/api/upload/route.ts#L4-L20)
+- [download.route.ts:1-150](file://app/api/download/route.ts#L1-L150)
+- [downloadSong.ts:1-66](file://lib/downloadSong.ts#L1-L66)
+- [api.ts:1-153](file://lib/api.ts#L1-L153)
 - [db.ts:1-10](file://lib/db.ts#L1-L10)
 - [cloudinary.ts:1-21](file://lib/cloudinary.ts#L1-L21)
 
@@ -98,12 +123,14 @@ UPLOAD --> CLOUDINARY
 - Authentication endpoints supporting sign-up, sign-in, forgot password, and reset password.
 - Admin endpoints for listing users with counts, updating roles/names, deleting users, seeding an admin, and retrieving platform statistics.
 - Feature endpoints for managing likes, follows, playlists, queue, and image uploads.
+- **NEW** Audio processing system with FFmpeg integration for converting audio files to MP3 format with embedded metadata and album art.
 
 Key implementation patterns:
 - Route handlers export HTTP verb functions per file.
 - Request bodies parsed via req.json(); query parameters via URL search params.
 - Responses returned as JSON with appropriate status codes.
 - Errors caught centrally and mapped to user-friendly messages.
+- **NEW** Audio processing endpoints handle binary data streaming and temporary file management.
 
 **Section sources**
 - [db.ts:1-10](file://lib/db.ts#L1-L10)
@@ -119,9 +146,11 @@ Key implementation patterns:
 - [playlists.route.ts:18-90](file://app/api/playlists/route.ts#L18-L90)
 - [queue.route.ts:24-86](file://app/api/queue/route.ts#L24-L86)
 - [upload.route.ts:4-20](file://app/api/upload/route.ts#L4-L20)
+- [download.route.ts:1-150](file://app/api/download/route.ts#L1-L150)
+- [downloadSong.ts:1-66](file://lib/downloadSong.ts#L1-L66)
 
 ## Architecture Overview
-The backend follows a functional, route-handler-first pattern with minimal middleware. Authentication is stateless and role-based via a user role field. Data persistence relies on Prisma with PostgreSQL. Media assets are uploaded to Cloudinary. Email notifications for password resets are optional and handled via SMTP transport.
+The backend follows a functional, route-handler-first pattern with minimal middleware. Authentication is stateless and role-based via a user role field. Data persistence relies on Prisma with PostgreSQL. Media assets are uploaded to Cloudinary. Email notifications for password resets are optional and handled via SMTP transport. **NEW** The audio processing system handles server-side conversion of audio files to MP3 format with embedded metadata and album art, enabling seamless browser downloads.
 
 ```mermaid
 graph TB
@@ -137,10 +166,13 @@ FOLLOWS_ROUTE["/api/follows"]
 PLAYLISTS_ROUTE["/api/playlists"]
 QUEUE_ROUTE["/api/queue"]
 UPLOAD_ROUTE["/api/upload"]
+DOWNLOAD_ROUTE["/api/download"]
 PRISMA_DB["PrismaClient"]
 PG_DB["PostgreSQL"]
 CLOUDINARY["Cloudinary"]
 SMTP["SMTP Transport"]
+FFMPEG["FFmpeg Process"]
+TEMP_FILES["Temporary Files"]
 CLIENT --> AUTH_ROUTE
 CLIENT --> FORGOT_ROUTE
 CLIENT --> RESET_ROUTE
@@ -152,6 +184,7 @@ CLIENT --> FOLLOWS_ROUTE
 CLIENT --> PLAYLISTS_ROUTE
 CLIENT --> QUEUE_ROUTE
 CLIENT --> UPLOAD_ROUTE
+CLIENT --> DOWNLOAD_ROUTE
 AUTH_ROUTE --> PRISMA_DB
 FORGOT_ROUTE --> PRISMA_DB
 RESET_ROUTE --> PRISMA_DB
@@ -163,8 +196,10 @@ FOLLOWS_ROUTE --> PRISMA_DB
 PLAYLISTS_ROUTE --> PRISMA_DB
 QUEUE_ROUTE --> PRISMA_DB
 UPLOAD_ROUTE --> CLOUDINARY
-PRISMA_DB --> PG_DB
-FORGOT_ROUTE --> SMTP
+DOWNLOAD_ROUTE --> FFMPEG
+DOWNLOAD_ROUTE --> TEMP_FILES
+FFMPEG --> TEMP_FILES
+TEMP_FILES --> CLIENT
 ```
 
 **Diagram sources**
@@ -179,6 +214,7 @@ FORGOT_ROUTE --> SMTP
 - [playlists.route.ts:18-90](file://app/api/playlists/route.ts#L18-L90)
 - [queue.route.ts:24-86](file://app/api/queue/route.ts#L24-L86)
 - [upload.route.ts:4-20](file://app/api/upload/route.ts#L4-L20)
+- [download.route.ts:1-150](file://app/api/download/route.ts#L1-L150)
 - [db.ts:1-10](file://lib/db.ts#L1-L10)
 - [cloudinary.ts:3-18](file://lib/cloudinary.ts#L3-L18)
 
@@ -432,12 +468,70 @@ Common patterns:
 - [playlists.route.ts:69-73](file://app/api/playlists/route.ts#L69-L73)
 - [admin.users.route.ts:49-51](file://app/api/admin/users/route.ts#L49-L51)
 
+## Audio Processing System
+
+**NEW** The audio processing system provides server-side conversion capabilities for audio files, enabling seamless downloads with embedded metadata and album art.
+
+### FFmpeg Integration
+The system integrates FFmpeg through the `fluent-ffmpeg` library with automatic platform-specific binary detection via `@ffmpeg-installer/ffmpeg`. The implementation handles cross-platform compatibility by dynamically loading the appropriate FFmpeg binary for different operating systems.
+
+### Audio Conversion Workflow
+The conversion process follows a six-step pipeline:
+
+1. **Audio Download**: Fetches the source audio file from the provided URL and saves it to a temporary location
+2. **Cover Art Download**: Optionally downloads album artwork if provided and not using inline data URIs
+3. **Metadata Embedding**: Configures FFmpeg with ID3 metadata including title, artist, album, year, and genre
+4. **File Conversion**: Converts M4A audio to MP3 format with 320kbps bitrate, stereo channels, and 44.1kHz frequency
+5. **Cleanup**: Removes temporary files from the filesystem
+6. **Download Response**: Streams the converted MP3 file back to the client with proper HTTP headers
+
+### Temporary File Management
+The system uses Node.js's `tmpdir()` for secure temporary file storage with UUID-based filenames to prevent conflicts. All temporary files are automatically cleaned up in both success and error scenarios using Promise-based cleanup operations.
+
+### Client-Side Integration
+The client-side download utility (`lib/downloadSong.ts`) coordinates with the server endpoint to:
+- Extract high-quality download URLs from the music API
+- Prepare metadata from song information
+- Handle the conversion and download process
+- Trigger browser downloads with proper filenames
+
+```mermaid
+sequenceDiagram
+participant Client as "Client Application"
+participant DownloadAPI as "/api/download"
+participant FFmpeg as "FFmpeg Process"
+participant FS as "File System"
+participant Browser as "Browser"
+Client->>DownloadAPI : POST { audioUrl, title, artist, album, year, imageUrl? }
+DownloadAPI->>FS : Create temp files (UUID-based)
+DownloadAPI->>DownloadAPI : Download audio file
+alt Cover art provided
+DownloadAPI->>DownloadAPI : Download cover image
+end
+DownloadAPI->>FFmpeg : Start conversion with metadata
+FFmpeg->>FS : Write converted MP3
+DownloadAPI->>FS : Cleanup temp files
+DownloadAPI->>Client : Stream MP3 with headers
+Client->>Browser : Trigger download
+```
+
+**Diagram sources**
+- [download.route.ts:25-140](file://app/api/download/route.ts#L25-L140)
+- [downloadSong.ts:8-66](file://lib/downloadSong.ts#L8-L66)
+
+**Section sources**
+- [download.route.ts:1-150](file://app/api/download/route.ts#L1-L150)
+- [downloadSong.ts:1-66](file://lib/downloadSong.ts#L1-L66)
+- [api.ts:79-83](file://lib/api.ts#L79-L83)
+
 ## Dependency Analysis
 External dependencies relevant to backend:
 - @prisma/client for ORM.
 - cloudinary for media uploads.
 - nodemailer for optional SMTP-based email sending during password reset.
 - next for server runtime and NextResponse/NextRequest.
+- **NEW** fluent-ffmpeg for audio processing and metadata embedding.
+- **NEW** @ffmpeg-installer/ffmpeg for platform-specific FFmpeg binaries.
 
 ```mermaid
 graph LR
@@ -446,17 +540,21 @@ PRISMA["@prisma/client"]
 CLOUD["cloudinary"]
 NODEMAIL["nodemailer"]
 NEXT["next"]
+FFMPEG["fluent-ffmpeg"]
+FFMPEG_INSTALL["@ffmpeg-installer/ffmpeg"]
 PKG --> PRISMA
 PKG --> CLOUD
 PKG --> NODEMAIL
 PKG --> NEXT
+PKG --> FFMPEG
+PKG --> FFMPEG_INSTALL
 ```
 
 **Diagram sources**
-- [package.json:12-32](file://package.json#L12-L32)
+- [package.json:12-35](file://package.json#L12-L35)
 
 **Section sources**
-- [package.json:12-32](file://package.json#L12-L32)
+- [package.json:12-35](file://package.json#L12-L35)
 
 ## Performance Considerations
 - Indexing strategies:
@@ -472,10 +570,14 @@ PKG --> NEXT
   - CDN for Cloudinary URLs to reduce origin load.
 - Asynchronous tasks:
   - Offload email sending to background jobs if SMTP becomes a bottleneck.
+  - **NEW** Consider caching converted audio files to reduce repeated processing.
 - Database connection:
   - Prisma client is initialized globally in development to avoid reconnects; ensure connection pooling is configured appropriately in production.
-
-[No sources needed since this section provides general guidance]
+- **NEW** Audio processing optimization:
+  - Implement rate limiting for the download endpoint to prevent abuse
+  - Consider implementing audio file size limits to prevent excessive resource consumption
+  - Use streaming responses to handle large audio files efficiently
+  - Implement proper timeout handling for long-running conversion processes
 
 ## Security Considerations
 - Password hashing:
@@ -483,6 +585,7 @@ PKG --> NEXT
 - Input validation:
   - Validate presence and length of inputs (e.g., password minimum length).
   - Sanitize and limit image sizes and formats when accepting uploads.
+  - **NEW** Validate audio URLs to prevent malicious file downloads and implement URL whitelist validation.
 - Role-based access control:
   - Admin endpoints currently rely on user role checks. Enforce role checks at route boundaries and guard sensitive operations.
 - Secrets management:
@@ -491,10 +594,10 @@ PKG --> NEXT
   - Configure CORS policies to restrict origins and consider CSRF protections for state-changing requests.
 - Rate limiting:
   - Apply rate limits to authentication endpoints to mitigate brute-force attacks.
+  - **NEW** Apply rate limits to the download endpoint to prevent abuse and excessive resource consumption.
 - Audit logging:
   - Log admin actions and failed authentication attempts for monitoring.
-
-[No sources needed since this section provides general guidance]
+  - **NEW** Log audio processing operations for monitoring and debugging purposes.
 
 ## Troubleshooting Guide
 - Authentication failures:
@@ -507,12 +610,19 @@ PKG --> NEXT
   - P2002 indicates a unique constraint violation; confirm frontend deduplication logic.
 - Database connectivity:
   - Verify DATABASE_URL/DIRECT_URL and Prisma client initialization in development vs. production environments.
+- **NEW** Audio processing issues:
+  - Verify FFmpeg installation and binary accessibility across platforms.
+  - Check disk space availability for temporary file storage.
+  - Monitor memory usage during audio conversion processes.
+  - Validate that audio URLs are accessible and not blocked by CORS restrictions.
+  - Ensure proper MIME type handling for audio files and album art.
 
 **Section sources**
 - [auth.route.ts:68-72](file://app/api/auth/route.ts#L68-L72)
 - [forgot.route.ts:57-60](file://app/api/auth/forgot/route.ts#L57-L60)
 - [reset.route.ts:43-47](file://app/api/auth/reset/route.ts#L43-L47)
 - [db.ts:3-9](file://lib/db.ts#L3-L9)
+- [download.route.ts:125-139](file://app/api/download/route.ts#L125-L139)
 
 ## Conclusion
-SonicStream’s backend leverages Next.js App Router’s route handlers with Prisma ORM for data access and Cloudinary for media. Authentication is stateless and role-based, with password reset flows optionally using SMTP. The API design emphasizes simplicity, explicit validation, and consistent error responses. For production readiness, prioritize robust password hashing, RBAC enforcement, input sanitization, and operational monitoring.
+SonicStream's backend leverages Next.js App Router's route handlers with Prisma ORM for data access and Cloudinary for media. Authentication is stateless and role-based, with password reset flows optionally using SMTP. The newly integrated audio processing system provides server-side conversion capabilities using FFmpeg, enabling seamless downloads with embedded metadata and album art. The API design emphasizes simplicity, explicit validation, and consistent error responses. For production readiness, prioritize robust password hashing, RBAC enforcement, input sanitization, operational monitoring, and proper resource management for the audio processing system.

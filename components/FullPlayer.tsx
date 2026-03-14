@@ -249,7 +249,7 @@ export default function FullPlayer({
               <button onClick={onClose} className="p-2.5 rounded-xl transition-all hover:scale-105 glass-card" style={{ color: 'var(--text-primary)' }}>
                 <ChevronDown size={22} />
               </button>
-              <div className="text-center overflow-hidden max-w-[180px]">
+              <div className="text-center flex flex-col items-center overflow-hidden max-w-[180px]">
                 <p className="text-[9px] uppercase tracking-[0.2em] font-bold mb-0.5" style={{ color: 'var(--accent)' }}>Playing from</p>
                 {(() => {
                   const albumName = currentSong.album?.name || 'Now Playing';

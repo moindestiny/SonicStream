@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://sonicstream.vercel.app',
+    url: 'https://sonic-stream-fawn.vercel.app',
     siteName: 'SonicStream',
     title: 'SonicStream — Free Music Streaming & Download',
     description: 'Stream and download millions of songs for free. Discover trending music, create playlists, and enjoy high-quality audio.',
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     images: ['/og-image.jpg'],
   },
   alternates: {
-    canonical: 'https://sonicstream.vercel.app',
+    canonical: 'https://sonic-stream-fawn.vercel.app',
   },
 };
 

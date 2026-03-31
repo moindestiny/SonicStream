@@ -250,7 +250,7 @@ export default function Player() {
                       <div className="space-y-1">
                         {userQueue.map((song, idx) => (
                           <div key={`user-${song.id}-${idx}`} className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer group transition-all hover:bg-white/5"
-                            onClick={() => setCurrentSong(song)}
+                            onClick={() => { setCurrentSong(song); removeFromQueue(song.id); }}
                           >
                             <div className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
                               <Image src={getHighQualityImage(song.image)} alt={song.name} fill className="object-cover" referrerPolicy="no-referrer" />

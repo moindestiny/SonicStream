@@ -1,21 +1,33 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { usePlayerStore } from '@/store/usePlayerStore';
 import SongCard from '@/components/SongCard';
-import { Library, History, Heart, Plus } from 'lucide-react';
+import ArtistCard from '@/components/ArtistCard';
+import { Library, History, Heart, Plus, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import CreatePlaylistModal from '@/components/CreatePlaylistModal';
 import AuthModal from '@/components/AuthModal';
-import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 export default function LibraryPage() {
-  const { recentlyPlayed, favorites } = usePlayerStore();
+  const { recentlyPlayed, favorites, user } = usePlayerStore();
   const router = useRouter();
   const { requireAuth, showAuthModal, setShowAuthModal } = useAuthGuard();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  // Fetch followed artists
+  const { data: followedArtists, isLoading: isLoadingFollows } = useQuery({
+    queryKey: ['followed-artists', user?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/follows?userId=${user!.id}`);
+      const data = await res.json();
+      return data.follows || [];
+    },
+    enabled: !!user?.id,
+  });
 
   const handlePlaylistsClick = () => {
     requireAuth(() => {
@@ -57,6 +69,41 @@ export default function LibraryPage() {
           <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>Start a new collection</p>
         </div>
       </div>
+
+      {/* Followed Artists */}
+      {user && (
+        <section className="mb-12">
+          <div className="flex items-center gap-2 mb-6">
+            <Users size={20} style={{ color: 'var(--accent)' }} />
+            <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Followed Artists</h2>
+          </div>
+          {isLoadingFollows ? (
+            <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="min-w-[140px] md:min-w-[160px] animate-pulse">
+                  <div className="w-full aspect-square rounded-full bg-white/5 mb-3"></div>
+                  <div className="h-4 bg-white/5 rounded w-3/4 mx-auto"></div>
+                </div>
+              ))}
+            </div>
+          ) : followedArtists?.length === 0 ? (
+            <p className="text-sm font-medium py-8 text-center" style={{ color: 'var(--text-muted)' }}>You haven't followed any artists yet.</p>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+              {followedArtists?.map((follow: any) => (
+                <ArtistCard 
+                  key={follow.artistId} 
+                  artist={{
+                    id: follow.artistId,
+                    name: follow.artistName,
+                    image: follow.artistImage ? [{ url: follow.artistImage }] : [],
+                  }} 
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Recently Played */}
       <section>

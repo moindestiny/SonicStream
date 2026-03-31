@@ -12,7 +12,7 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
-  const { setUser } = usePlayerStore();
+  const { setUser, hydrateUserData } = usePlayerStore();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,6 +39,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       const data = await res.json();
       if (!res.ok) { setError(data.error); return; }
       setUser(data.user);
+      await hydrateUserData();
       toast.success(`Welcome${isSignUp ? '' : ' back'}, ${data.user.name}!`);
       onClose();
       setEmail(''); setPassword(''); setName('');

@@ -72,19 +72,22 @@ export async function POST(req: NextRequest) {
 
     // 3. Convert to MP3 with metadata using FFmpeg
     await new Promise<void>((resolve, reject) => {
+      const metadataOptions = [
+        '-id3v2_version', '3',
+        '-metadata', `title=${title}`,
+        '-metadata', `artist=${artist}`,
+        '-metadata', `album=${album || 'Unknown Album'}`,
+        ...(year ? ['-metadata', `date=${year}`] : []),
+        '-metadata', 'genre=Pop',
+      ];
+
       const command = ffmpeg(tempAudioPath!)
         .toFormat('mp3')
         .audioBitrate(320)
         .audioChannels(2)
         .audioFrequency(44100)
-        .outputOptions([
-          '-id3v2_version', '3',
-          '-metadata', `title=${title}`,
-          '-metadata', `artist=${artist}`,
-          '-metadata', `album=${album || 'Unknown Album'}`,
-          ...(year ? ['-metadata', `date=${year}`] : []),
-          '-metadata', `genre=${'Pop'}`,
-        ]);
+        // Pass as variadic args so fluent-ffmpeg does not split metadata by spaces.
+        .outputOptions(...metadataOptions);
 
       // Add album art if available
       if (hasImage && tempImagePath) {

@@ -53,14 +53,79 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      // Update coverUrl if the playlist doesn't have one yet
+      const playlist = await prisma.playlist.findUnique({
+        where: { id: playlistId },
+        select: { coverUrl: true },
+      });
+
+      if (!playlist?.coverUrl) {
+        try {
+          const songRes = await fetch(`https://jio-saavn-api-delta-steel.vercel.app/api/songs/${songId}`);
+          if (songRes.ok) {
+            const songData = await songRes.json();
+            const song = songData?.data?.[0];
+            if (song && song.image && song.image.length > 0) {
+              const highQualityCover = song.image[song.image.length - 1]?.url || song.image[0]?.url;
+              if (highQualityCover) {
+                await prisma.playlist.update({
+                  where: { id: playlistId },
+                  data: { coverUrl: highQualityCover },
+                });
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Failed to update playlist cover:', err);
+        }
+      }
+
       return NextResponse.json({ success: true });
     }
 
     if (action === 'removeSong') {
       const { playlistId, songId } = body;
+      if (!playlistId || !songId) {
+        return NextResponse.json({ error: 'playlistId and songId required' }, { status: 400 });
+      }
+
       await prisma.playlistSong.deleteMany({
         where: { playlistId, songId },
       });
+
+      // Fetch the new first song to make it the cover photo
+      const firstSong = await prisma.playlistSong.findFirst({
+        where: { playlistId },
+        orderBy: { position: 'asc' },
+      });
+
+      if (firstSong) {
+        try {
+          const songRes = await fetch(`https://jio-saavn-api-delta-steel.vercel.app/api/songs/${firstSong.songId}`);
+          if (songRes.ok) {
+            const songData = await songRes.json();
+            const song = songData?.data?.[0];
+            if (song && song.image && song.image.length > 0) {
+              const highQualityCover = song.image[song.image.length - 1]?.url || song.image[0]?.url;
+              if (highQualityCover) {
+                await prisma.playlist.update({
+                  where: { id: playlistId },
+                  data: { coverUrl: highQualityCover },
+                });
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Failed to update playlist cover after removal:', err);
+        }
+      } else {
+        // No songs left, reset coverUrl to null
+        await prisma.playlist.update({
+          where: { id: playlistId },
+          data: { coverUrl: null },
+        });
+      }
+
       return NextResponse.json({ success: true });
     }
 

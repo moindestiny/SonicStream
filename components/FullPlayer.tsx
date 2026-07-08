@@ -389,25 +389,9 @@ export default function FullPlayer({
                       );
                     })()}
                     
-                    <div className="flex items-center gap-2 shrink-0 self-start">
-                      {/* Sleep Timer Button */}
-                      <button onClick={handleCycleSleepTimer} className="p-2.5 rounded-xl transition-all glass-card hover:bg-white/10 relative" style={{ color: sleepTimerMinutes ? 'var(--accent)' : 'var(--text-muted)' }} title="Sleep Timer">
-                        <Clock size={22} />
-                        {sleepTimerMinutes && (
-                          <span className="absolute -top-1.5 -right-1.5 text-[8px] font-black px-1 py-0.5 rounded-full text-white bg-purple-500">
-                            {Math.ceil(sleepTimerTimeLeft! / 60)}m
-                          </span>
-                        )}
-                      </button>
-                      {/* Share Button */}
-                      <button onClick={() => setShowShareModal(true)} className="p-2.5 rounded-xl transition-all glass-card hover:bg-white/10" style={{ color: 'var(--text-muted)' }} title="Share Song">
-                        <Share2 size={22} />
-                      </button>
-                      <button onClick={handleAddPlaylist} className="p-2.5 rounded-xl transition-all glass-card hover:bg-white/10" style={{ color: 'var(--text-muted)' }} title="Add to Playlist">
-                        <ListPlus size={22} />
-                      </button>
+                    <div className="flex items-center shrink-0 self-center">
                       <button onClick={handleLike} className="p-2.5 rounded-xl transition-all glass-card hover:bg-white/10" style={{ color: isFavorite ? 'var(--accent)' : 'var(--text-muted)' }} title="Like Song">
-                        <Heart size={22} fill={isFavorite ? 'currentColor' : 'none'} />
+                        <Heart size={24} fill={isFavorite ? 'currentColor' : 'none'} />
                       </button>
                     </div>
                   </div>
@@ -455,6 +439,29 @@ export default function FullPlayer({
                       <input type="range" min={0} max={1} step={0.01} value={isMuted ? 0 : volume} onChange={(e) => onVolumeChange(parseFloat(e.target.value))} className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer" />
                       <div className="absolute top-0 left-0 h-full rounded-full transition-all" style={{ width: `${(isMuted ? 0 : volume) * 100}%`, background: 'var(--accent)' }} />
                     </div>
+                  </div>
+
+                  {/* Dedicated Utility Actions Row */}
+                  <div className="flex items-center justify-around pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+                    {/* Sleep Timer */}
+                    <button onClick={handleCycleSleepTimer} className="flex flex-col items-center gap-1 p-2 rounded-xl transition-all hover:bg-white/5 relative" style={{ color: sleepTimerMinutes ? 'var(--accent)' : 'var(--text-muted)' }} title="Sleep Timer">
+                      <Clock size={20} />
+                      <span className="text-[10px] font-bold">
+                        {sleepTimerMinutes ? `${Math.ceil(sleepTimerTimeLeft! / 60)}m` : 'Sleep Timer'}
+                      </span>
+                    </button>
+                    
+                    {/* Share */}
+                    <button onClick={() => setShowShareModal(true)} className="flex flex-col items-center gap-1 p-2 rounded-xl transition-all hover:bg-white/5" style={{ color: 'var(--text-muted)' }} title="Share Song">
+                      <Share2 size={20} />
+                      <span className="text-[10px] font-bold">Share</span>
+                    </button>
+
+                    {/* Add to Playlist */}
+                    <button onClick={handleAddPlaylist} className="flex flex-col items-center gap-1 p-2 rounded-xl transition-all hover:bg-white/5" style={{ color: 'var(--text-muted)' }} title="Add to Playlist">
+                      <ListPlus size={20} />
+                      <span className="text-[10px] font-bold">Add to Playlist</span>
+                    </button>
                   </div>
                 </div>
               </div>

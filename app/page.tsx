@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api, normalizeSong, getHighQualityImage } from '@/lib/api';
+import { api, normalizeSong, getHighQualityImage, BASE_URL, DEFAULT_STALE_TIME } from '@/lib/api';
 import SongCard from '@/components/SongCard';
 import ArtistCard from '@/components/ArtistCard';
 import PlaylistCard from '@/components/PlaylistCard';
@@ -13,7 +13,6 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { usePlayerStore } from '@/store/usePlayerStore';
 
-const BASE_URL = 'https://jio-saavn-api-delta-steel.vercel.app/api';
 const fetcher = async (url: string) => { const res = await fetch(`${BASE_URL}${url}`); return res.json(); };
 
 function getGreeting() {
@@ -38,16 +37,19 @@ export default function HomePage() {
   const { data: trendingData, isLoading: trendingLoading } = useQuery({
     queryKey: ['trending-songs'],
     queryFn: () => fetcher(api.searchSongs('Trending Bollywood Songs', 0, 13)),
+    staleTime: DEFAULT_STALE_TIME,
   });
 
   const { data: artistsData, isLoading: artistsLoading } = useQuery({
     queryKey: ['popular-artists'],
     queryFn: () => fetcher(api.searchArtists('Popular Artists', 0, 8)),
+    staleTime: DEFAULT_STALE_TIME,
   });
 
   const { data: playlistsData, isLoading: playlistsLoading } = useQuery({
     queryKey: ['top-playlists'],
     queryFn: () => fetcher(api.searchPlaylists('Top', 0, 12)),
+    staleTime: DEFAULT_STALE_TIME,
   });
 
   const trendingCards = trendingData?.data?.results?.slice(0, 13) || [];
@@ -114,7 +116,7 @@ export default function HomePage() {
                   Trending #1
                 </span>
               </div>
-              <h2 className="text-2xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-1 md:mb-2 text-white line-clamp-2" dangerouslySetInnerHTML={{ __html: heroItem.name }} />
+              <h2 className="text-2xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-1 md:mb-2 text-white line-clamp-2">{heroItem.name}</h2>
               <p className="text-xs md:text-base font-medium text-gray-300 mb-3 md:mb-5 line-clamp-1">
                 {heroItem.artists?.primary?.map((a: any) => a.name).join(', ') || 'Unknown Artist'}
               </p>

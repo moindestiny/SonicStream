@@ -5,9 +5,7 @@ import { usePlayerStore } from '@/store/usePlayerStore';
 import SongCard from '@/components/SongCard';
 import { Heart, Music } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { api, normalizeSong } from '@/lib/api';
-
-const BASE_URL = 'https://jio-saavn-api-delta-steel.vercel.app/api';
+import { api, normalizeSong, BASE_URL } from '@/lib/api';
 
 export default function FavoritesPage() {
   const { favorites } = usePlayerStore();

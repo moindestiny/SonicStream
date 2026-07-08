@@ -3,20 +3,20 @@
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { Play, Clock, Library, Trash2, ArrowLeft } from 'lucide-react';
+import { Play, Clock, Library, Trash2, ArrowLeft, Share2 } from 'lucide-react';
 import { usePlayerStore } from '@/store/usePlayerStore';
 import Image from 'next/image';
 import Link from 'next/link';
 import SkeletonLoader from '@/components/SkeletonLoader';
+import ShareModal from '@/components/ShareModal';
 import toast from 'react-hot-toast';
-import { api, normalizeSong } from '@/lib/api';
-
-const BASE_URL = 'https://jio-saavn-api-delta-steel.vercel.app/api';
+import { api, normalizeSong, BASE_URL } from '@/lib/api';
 
 export default function CustomPlaylistViewPage() {
   const { id } = useParams();
   const router = useRouter();
   const { user, setCurrentSong, setQueue, currentSong, isPlaying } = usePlayerStore();
+  const [showShareModal, setShowShareModal] = React.useState(false);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['custom-playlist', id],
@@ -116,6 +116,9 @@ export default function CustomPlaylistViewPage() {
         <button onClick={handlePlayAll} disabled={songs.length === 0} className="w-14 h-14 aurora-bg rounded-full flex items-center justify-center text-white hover:scale-105 transition-all shadow-lg shadow-purple-500/20 disabled:opacity-50 disabled:hover:scale-100">
           <Play size={24} fill="currentColor" className="ml-1" />
         </button>
+        <button onClick={() => setShowShareModal(true)} className="p-3 rounded-full transition-all glass-card hover:bg-white/10" style={{ color: 'var(--text-muted)' }} title="Share">
+          <Share2 size={20} />
+        </button>
       </div>
 
       {/* Tracklist */}
@@ -181,6 +184,18 @@ export default function CustomPlaylistViewPage() {
           )}
         </div>
       </div>
+
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        item={{
+          id: playlist.id,
+          name: playlist.name,
+          image: playlist.coverUrl ? [{ quality: '500x500', url: playlist.coverUrl }] : [],
+          type: 'playlist'
+        }}
+      />
     </div>
   );
 }
+

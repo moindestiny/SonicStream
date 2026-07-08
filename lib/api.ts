@@ -34,7 +34,13 @@ export interface Song {
   downloadUrl: Array<{ quality: string; url: string }>;
 }
 
-const BASE_URL = 'https://jio-saavn-api-delta-steel.vercel.app/api';
+// Single source of truth for the JioSaavn API base URL
+export const BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  'https://jio-saavn-api-delta-steel.vercel.app/api';
+
+// Default stale time for React Query caches (5 minutes)
+export const DEFAULT_STALE_TIME = 5 * 60 * 1000;
 
 export async function fetcher(url: string) {
   const res = await fetch(`${BASE_URL}${url}`);
@@ -45,30 +51,54 @@ export async function fetcher(url: string) {
 export const api = {
   // Search Routes
   search: (query: string) => `/search?query=${encodeURIComponent(query)}`,
-  searchSongs: (query: string, page = 0, limit = 10) => `/search/songs?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`,
-  searchAlbums: (query: string, page = 0, limit = 10) => `/search/albums?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`,
-  searchArtists: (query: string, page = 0, limit = 10) => `/search/artists?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`,
-  searchPlaylists: (query: string, page = 0, limit = 10) => `/search/playlists?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`,
+  searchSongs: (query: string, page = 0, limit = 10) =>
+    `/search/songs?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`,
+  searchAlbums: (query: string, page = 0, limit = 10) =>
+    `/search/albums?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`,
+  searchArtists: (query: string, page = 0, limit = 10) =>
+    `/search/artists?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`,
+  searchPlaylists: (query: string, page = 0, limit = 10) =>
+    `/search/playlists?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`,
 
-  // Song Routes
+  // Song Routes — per OpenAPI spec:
+  //   GET /api/songs?ids=...          (bulk by comma-separated IDs)
+  //   GET /api/songs/{id}             (single song)
+  //   GET /api/songs/{id}/suggestions (similar songs)
   songs: (ids: string) => `/songs?ids=${ids}`,
   songDetails: (id: string) => `/songs/${id}`,
-  songSuggestions: (id: string, limit = 10) => `/songs/${id}/suggestions?limit=${limit}`,
+  songSuggestions: (id: string, limit = 10) =>
+    `/songs/${id}/suggestions?limit=${limit}`,
 
-  // Album Routes
+  // Album Routes — GET /api/albums?id=...
   albumDetails: (id: string) => `/albums?id=${id}`,
 
-  // Artist Routes
-  artists: (ids: string) => `/artists?ids=${ids}`, // Added based on typical plural path
-  artistDetails: (id: string) => `/artists/${id}`, // FIXED from /artists?id={id}
-  artistSongs: (id: string, page = 0, sortBy = 'popularity', sortOrder = 'desc') => `/artists/${id}/songs?page=${page}&sortBy=${sortBy}&sortOrder=${sortOrder}`, // FIXED from /artists/songs?id={id}
-  artistAlbums: (id: string, page = 0, sortBy = 'popularity', sortOrder = 'desc') => `/artists/${id}/albums?page=${page}&sortBy=${sortBy}&sortOrder=${sortOrder}`, // FIXED from /artists/albums?id={id}
+  // Artist Routes — per OpenAPI spec:
+  //   GET /api/artists?id=...             (by id or link)
+  //   GET /api/artists/{id}/songs         (paginated songs)
+  //   GET /api/artists/{id}/albums        (paginated albums)
+  artistDetails: (id: string) => `/artists?id=${id}`,
+  artistSongs: (
+    id: string,
+    page = 0,
+    sortBy = 'popularity',
+    sortOrder = 'desc'
+  ) =>
+    `/artists/${id}/songs?page=${page}&sortBy=${sortBy}&sortOrder=${sortOrder}`,
+  artistAlbums: (
+    id: string,
+    page = 0,
+    sortBy = 'popularity',
+    sortOrder = 'desc'
+  ) =>
+    `/artists/${id}/albums?page=${page}&sortBy=${sortBy}&sortOrder=${sortOrder}`,
 
-  // Playlist Routes
-  playlistDetails: (id: string, page = 0, limit = 10) => `/playlists?id=${id}&page=${page}&limit=${limit}`,
+  // Playlist Routes — GET /api/playlists?id=...&page=...&limit=...
+  playlistDetails: (id: string, page = 0, limit = 10) =>
+    `/playlists?id=${id}&page=${page}&limit=${limit}`,
 };
 
-const FALLBACK_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%231a1a25'/%3E%3Ccircle cx='200' cy='170' r='60' fill='none' stroke='%23555' stroke-width='3'/%3E%3Cpath d='M180 170v-30l40 15-40 15z' fill='%23555'/%3E%3Ctext x='200' y='270' text-anchor='middle' fill='%23555' font-size='14' font-family='sans-serif'%3ENo Image%3C/text%3E%3C/svg%3E";
+const FALLBACK_IMAGE =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%231a1a25'/%3E%3Ccircle cx='200' cy='170' r='60' fill='none' stroke='%23555' stroke-width='3'/%3E%3Cpath d='M180 170v-30l40 15-40 15z' fill='%23555'/%3E%3Ctext x='200' y='270' text-anchor='middle' fill='%23555' font-size='14' font-family='sans-serif'%3ENo Image%3C/text%3E%3C/svg%3E";
 
 export function getHighQualityImage(images: Array<{ quality: string; url: string }>) {
   if (!images || images.length === 0) return FALLBACK_IMAGE;

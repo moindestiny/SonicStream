@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { api, getHighQualityImage, formatDuration, normalizeSong } from '@/lib/api';
+import { api, getHighQualityImage, formatDuration, normalizeSong, BASE_URL, DEFAULT_STALE_TIME } from '@/lib/api';
 import { Play, CheckCircle2, Music, UserPlus, UserCheck, TrendingUp, Plus } from 'lucide-react';
 import { usePlayerStore } from '@/store/usePlayerStore';
 import Image from 'next/image';
@@ -17,7 +17,6 @@ import AuthModal from '@/components/AuthModal';
 import toast from 'react-hot-toast';
 import { motion } from 'motion/react';
 
-const BASE_URL = 'https://jio-saavn-api-delta-steel.vercel.app/api';
 
 export default function ArtistPage() {
   const { id } = useParams();
@@ -29,6 +28,7 @@ export default function ArtistPage() {
     queryKey: ['artist', id],
     queryFn: async () => { const res = await fetch(`${BASE_URL}${api.artistDetails(id as string)}`); return res.json(); },
     enabled: !!id,
+    staleTime: DEFAULT_STALE_TIME,
   });
 
   // Follow state

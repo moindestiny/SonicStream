@@ -22,7 +22,7 @@ export default function Player() {
     currentSong, isPlaying, togglePlay, playNext, playPrevious,
     volume, setVolume, repeatMode, setRepeatMode, isShuffle, toggleShuffle,
     favorites, toggleFavorite, userQueue, defaultQueue, isQueueOpen, setQueueOpen, removeFromQueue,
-    setCurrentSong, getFullQueue
+    setCurrentSong, getFullQueue, sleepTimerTimeLeft, tickSleepTimer
   } = usePlayerStore();
   
   // Initialize default queue hook
@@ -33,6 +33,15 @@ export default function Player() {
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullPlayerOpen, setIsFullPlayerOpen] = useState(false);
+
+  // Sleep Timer countdown ticking
+  useEffect(() => {
+    if (sleepTimerTimeLeft === null) return;
+    const interval = setInterval(() => {
+      tickSleepTimer();
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [sleepTimerTimeLeft, tickSleepTimer]);
 
   useEffect(() => {
     if (currentSong && audioRef.current) {
@@ -190,9 +199,15 @@ export default function Player() {
             </div>
 
             {/* Mobile Controls */}
-            <div className="flex md:hidden items-center gap-3">
+            <div className="flex md:hidden items-center gap-2">
+              <button onClick={playPrevious} className="p-1.5 transition-all active:scale-95" style={{ color: 'var(--text-secondary)' }}>
+                <SkipBack size={18} fill="currentColor" />
+              </button>
               <button onClick={togglePlay} className="w-10 h-10 rounded-full flex items-center justify-center text-white" style={{ background: 'var(--accent)' }}>
                 {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />}
+              </button>
+              <button onClick={playNext} className="p-1.5 transition-all active:scale-95" style={{ color: 'var(--text-secondary)' }}>
+                <SkipForward size={18} fill="currentColor" />
               </button>
             </div>
           </div>

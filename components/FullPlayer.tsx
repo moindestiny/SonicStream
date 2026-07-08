@@ -4,20 +4,19 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ChevronDown, Play, Pause, SkipBack, SkipForward,
-  Volume2, VolumeX, Repeat, Shuffle, Heart, Download, MoreHorizontal, ListPlus, X
+  Volume2, VolumeX, Repeat, Shuffle, Heart, Download, MoreHorizontal, ListPlus, X, Share2, Clock
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Song, getHighQualityImage, getHighQualityDownloadUrl, formatDuration, api, normalizeSong } from '@/lib/api';
+import { Song, getHighQualityImage, getHighQualityDownloadUrl, formatDuration, api, normalizeSong, BASE_URL } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 import { usePlayerStore } from '@/store/usePlayerStore';
 import { downloadSong } from '@/lib/downloadSong';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import AuthModal from '@/components/AuthModal';
 import AddToPlaylistModal from '@/components/AddToPlaylistModal';
+import ShareModal from '@/components/ShareModal';
 import toast from 'react-hot-toast';
-
-const BASE_URL = 'https://jio-saavn-api-delta-steel.vercel.app/api';
 
 interface FullPlayerProps {
   isOpen: boolean;
@@ -40,8 +39,29 @@ export default function FullPlayer({
     repeatMode, setRepeatMode, isShuffle, toggleShuffle,
     favorites, toggleFavorite, setCurrentSong, setQueue, 
     userQueue, defaultQueue, removeFromQueue, setQueueOpen, isQueueOpen,
-    getFullQueue, addToQueue
+    getFullQueue, addToQueue, sleepTimerMinutes, sleepTimerTimeLeft, setSleepTimer
   } = usePlayerStore();
+
+  const [showShareModal, setShowShareModal] = React.useState(false);
+
+  const handleCycleSleepTimer = () => {
+    const nextMinutes: Record<string, number | null> = {
+      'null': 5,
+      '5': 15,
+      '15': 30,
+      '30': 45,
+      '45': 60,
+      '60': null
+    };
+    const currentKey = sleepTimerMinutes === null ? 'null' : String(sleepTimerMinutes);
+    const nextVal = nextMinutes[currentKey];
+    setSleepTimer(nextVal);
+    if (nextVal) {
+      toast.success(`Sleep timer set to ${nextVal} minutes ⏰`);
+    } else {
+      toast.success('Sleep timer turned off');
+    }
+  };
 
   // Touch handling for swipe down to close (only when at top of scroll)
   const touchStartY = React.useRef(0);
@@ -370,6 +390,19 @@ export default function FullPlayer({
                     })()}
                     
                     <div className="flex items-center gap-2 shrink-0 self-start">
+                      {/* Sleep Timer Button */}
+                      <button onClick={handleCycleSleepTimer} className="p-2.5 rounded-xl transition-all glass-card hover:bg-white/10 relative" style={{ color: sleepTimerMinutes ? 'var(--accent)' : 'var(--text-muted)' }} title="Sleep Timer">
+                        <Clock size={22} />
+                        {sleepTimerMinutes && (
+                          <span className="absolute -top-1.5 -right-1.5 text-[8px] font-black px-1 py-0.5 rounded-full text-white bg-purple-500">
+                            {Math.ceil(sleepTimerTimeLeft! / 60)}m
+                          </span>
+                        )}
+                      </button>
+                      {/* Share Button */}
+                      <button onClick={() => setShowShareModal(true)} className="p-2.5 rounded-xl transition-all glass-card hover:bg-white/10" style={{ color: 'var(--text-muted)' }} title="Share Song">
+                        <Share2 size={22} />
+                      </button>
                       <button onClick={handleAddPlaylist} className="p-2.5 rounded-xl transition-all glass-card hover:bg-white/10" style={{ color: 'var(--text-muted)' }} title="Add to Playlist">
                         <ListPlus size={22} />
                       </button>
@@ -649,6 +682,17 @@ export default function FullPlayer({
       </AnimatePresence>
 
       <AddToPlaylistModal isOpen={showAddPlaylist} onClose={() => setShowAddPlaylist(false)} songId={currentSong.id} />
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        item={{
+          id: currentSong.id,
+          name: currentSong.name,
+          artist: currentSong.artists?.primary?.map((a: any) => a.name).join(', ') || 'Unknown Artist',
+          image: currentSong.image,
+          type: 'song'
+        }}
+      />
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </>
   );

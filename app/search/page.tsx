@@ -18,6 +18,7 @@ const categories = [
 ];
 
 const SEARCH_STORAGE_KEY = 'sonicstream_search_query';
+const RECENT_SEARCHES_KEY = 'sonicstream_recent_searches';
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -27,13 +28,22 @@ function SearchContent() {
   const [query, setQuery] = useState(initialQuery);
   const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
   const [activeTab, setActiveTab] = useState<'songs' | 'artists' | 'albums' | 'playlists'>('songs');
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
-  // Load saved search query from localStorage on mount
+  // Load saved search query and recent searches on mount
   useEffect(() => {
     const savedQuery = localStorage.getItem(SEARCH_STORAGE_KEY);
     if (savedQuery && !initialQuery) {
       setQuery(savedQuery);
       setDebouncedQuery(savedQuery);
+    }
+    const savedRecent = localStorage.getItem(RECENT_SEARCHES_KEY);
+    if (savedRecent) {
+      try {
+        setRecentSearches(JSON.parse(savedRecent));
+      } catch {
+        setRecentSearches([]);
+      }
     }
   }, [initialQuery]);
 
@@ -41,8 +51,25 @@ function SearchContent() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(query);
-      if (query.trim()) {
-        localStorage.setItem(SEARCH_STORAGE_KEY, query);
+      const trimmed = query.trim();
+      if (trimmed) {
+        localStorage.setItem(SEARCH_STORAGE_KEY, trimmed);
+        
+        // Add to recent searches list safely
+        const savedRecent = localStorage.getItem(RECENT_SEARCHES_KEY);
+        let list: string[] = [];
+        try {
+          list = savedRecent ? JSON.parse(savedRecent) : [];
+          if (!Array.isArray(list)) list = [];
+        } catch {
+          list = [];
+        }
+        
+        if (!list.includes(trimmed)) {
+          const newList = [trimmed, ...list].slice(0, 6);
+          localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(newList));
+          setRecentSearches(newList);
+        }
       } else {
         localStorage.removeItem(SEARCH_STORAGE_KEY);
       }
@@ -89,21 +116,70 @@ function SearchContent() {
       {/* Browse Categories (when no query) */}
       {showBrowse ? (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-          <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Browse</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {categories.map((cat, idx) => (
-              <motion.button
-                key={cat.label}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                onClick={() => setQuery(cat.query)}
-                className="aurora-bg rounded-2xl p-6 text-left group overflow-hidden relative"
-              >
-                <cat.icon size={32} className="text-white/80 mb-3" />
-                <span className="text-lg font-bold text-white">{cat.label}</span>
-              </motion.button>
-            ))}
+          {recentSearches.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xs font-bold uppercase tracking-wider opacity-60" style={{ color: 'var(--text-muted)' }}>
+                  Recent Searches
+                </h3>
+                <button
+                  onClick={() => {
+                    localStorage.removeItem(RECENT_SEARCHES_KEY);
+                    setRecentSearches([]);
+                  }}
+                  className="text-xs font-bold transition-colors hover:underline"
+                  style={{ color: 'var(--accent)' }}
+                >
+                  Clear all
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {recentSearches.map((s) => (
+                  <div
+                    key={s}
+                    onClick={() => {
+                      setQuery(s);
+                      setDebouncedQuery(s);
+                    }}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full cursor-pointer transition-all hover:scale-105 active:scale-95 text-xs font-semibold"
+                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+                  >
+                    <span style={{ color: 'var(--text-primary)' }}>{s}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const newList = recentSearches.filter((item) => item !== s);
+                        localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(newList));
+                        setRecentSearches(newList);
+                      }}
+                      className="p-0.5 rounded-full hover:bg-white/10"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Browse</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {categories.map((cat, idx) => (
+                <motion.button
+                  key={cat.label}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  onClick={() => setQuery(cat.query)}
+                  className="aurora-bg rounded-2xl p-6 text-left group overflow-hidden relative"
+                >
+                  <cat.icon size={32} className="text-white/80 mb-3" />
+                  <span className="text-lg font-bold text-white">{cat.label}</span>
+                </motion.button>
+              ))}
+            </div>
           </div>
         </motion.div>
       ) : (

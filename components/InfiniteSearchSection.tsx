@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { normalizeSong } from '@/lib/api';
+import { normalizeSong, BASE_URL } from '@/lib/api';
 import SongCard from '@/components/SongCard';
 import AlbumCard from '@/components/AlbumCard';
 import ArtistCard from '@/components/ArtistCard';
@@ -10,7 +10,6 @@ import PlaylistCard from '@/components/PlaylistCard';
 import SkeletonLoader from '@/components/SkeletonLoader';
 import { ChevronDown } from 'lucide-react';
 
-const BASE_URL = 'https://jio-saavn-api-delta-steel.vercel.app/api';
 const PAGE_SIZE = 10;
 
 interface InfiniteSearchSectionProps {

@@ -22,6 +22,8 @@ interface PlayerState {
   user: UserData | null;
   isQueueOpen: boolean;
   lastPlayedDefaultId: string | null;
+  sleepTimerMinutes: number | null; // Selected duration in minutes
+  sleepTimerTimeLeft: number | null; // Countdown in seconds
 
   // Actions
   setCurrentSong: (song: Song | null) => void;
@@ -44,6 +46,8 @@ interface PlayerState {
   setQueueOpen: (open: boolean) => void;
   getFullQueue: () => Song[];
   hydrateUserData: () => Promise<void>;
+  setSleepTimer: (minutes: number | null) => void;
+  tickSleepTimer: () => void;
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -61,6 +65,25 @@ export const usePlayerStore = create<PlayerState>()(
       user: null,
       isQueueOpen: false,
       lastPlayedDefaultId: null,
+      sleepTimerMinutes: null,
+      sleepTimerTimeLeft: null,
+
+      setSleepTimer: (minutes) => {
+        if (minutes === null) {
+          set({ sleepTimerMinutes: null, sleepTimerTimeLeft: null });
+        } else {
+          set({ sleepTimerMinutes: minutes, sleepTimerTimeLeft: minutes * 60 });
+        }
+      },
+      tickSleepTimer: () => {
+        const { sleepTimerTimeLeft } = get();
+        if (sleepTimerTimeLeft === null) return;
+        if (sleepTimerTimeLeft <= 1) {
+          set({ isPlaying: false, sleepTimerMinutes: null, sleepTimerTimeLeft: null });
+        } else {
+          set({ sleepTimerTimeLeft: sleepTimerTimeLeft - 1 });
+        }
+      },
 
       setCurrentSong: (song) => {
         const state = get();
@@ -105,24 +128,25 @@ export const usePlayerStore = create<PlayerState>()(
         }
       },
       clearQueue: () => {
+        // Capture user BEFORE calling set() to avoid stale reads
+        const { user } = get();
         set({ userQueue: [], defaultQueue: [] });
-        const state = get();
-        if (state.user) {
+        if (user) {
           fetch('/api/queue', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'clear', userId: state.user.id }),
+            body: JSON.stringify({ action: 'clear', userId: user.id }),
           }).catch(console.error);
         }
       },
       clearUserQueue: () => {
+        const { user } = get();
         set({ userQueue: [] });
-        const state = get();
-        if (state.user) {
+        if (user) {
           fetch('/api/queue', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'clear', userId: state.user.id }),
+            body: JSON.stringify({ action: 'clear', userId: user.id }),
           }).catch(console.error);
         }
       },
